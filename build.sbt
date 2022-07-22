@@ -1,4 +1,4 @@
-name := """utils-component"""
+name := "core-component"
 organization := "dot.cpp"
 
 version := "1.0-SNAPSHOT"
