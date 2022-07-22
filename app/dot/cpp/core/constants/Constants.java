@@ -1,4 +1,4 @@
-package dot.cpp.core.constant;
+package dot.cpp.core.constants;
 
 public class Constants {
   public static final int EMAIL_FIELD_LENGTH = 140;

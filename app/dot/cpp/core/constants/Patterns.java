@@ -1,4 +1,4 @@
-package dot.cpp.core.constant;
+package dot.cpp.core.constants;
 
 public class Patterns {
   public static final String NAME = "^([ \\u00c0-\\u01ffa-zA-Z'\\-])*$";
