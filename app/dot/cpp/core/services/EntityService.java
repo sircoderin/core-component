@@ -29,20 +29,12 @@ public class EntityService<T extends BaseEntity> {
   }
 
   public void save(T entity) {
-    try {
-      repository.save(entity);
-    } catch (Exception e) {
-      logger.error("", e);
-      // todo remove this or throw exception further, not sure if needed
-    }
+    repository.save(entity);
+    //TODO exceptions
   }
 
   public void delete(T entity) {
-    try {
-      repository.save(entity);
-    } catch (Exception e) {
-      logger.error("", e);
-      // todo
-    }
+    repository.delete(entity);
+    //TODO exceptions
   }
 }
