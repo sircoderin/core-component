@@ -28,6 +28,14 @@ public class EntityService<T extends BaseEntity> {
     return repository.listByField(clazz, field, value);
   }
 
+  public List<T> listAll(Class<T> clazz) {
+    return repository.listAll(clazz);
+  }
+
+  public List<T> listAllPaginated(Class<T> clazz, int pageSize, int pageNum) {
+    return repository.listAllPaginated(clazz, pageSize, pageNum);
+  }
+
   public void save(T entity) {
     repository.save(entity);
     //TODO exceptions
