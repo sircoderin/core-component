@@ -3,11 +3,8 @@ package dot.cpp.core.services;
 import dot.cpp.repository.models.BaseEntity;
 import dot.cpp.repository.repository.BaseRepository;
 import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class EntityService<T extends BaseEntity> {
-  private final Logger logger = LoggerFactory.getLogger(getClass());
   private final BaseRepository<T> repository;
 
   public EntityService(BaseRepository<T> repository) {
