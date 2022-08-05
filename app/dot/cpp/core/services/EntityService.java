@@ -1,6 +1,7 @@
 package dot.cpp.core.services;
 
 import dot.cpp.repository.models.BaseEntity;
+import dev.morphia.query.experimental.filters.Filter;
 import dot.cpp.repository.repository.BaseRepository;
 import java.util.List;
 
@@ -27,8 +28,16 @@ public class EntityService<T extends BaseEntity> {
     return repository.listAll();
   }
 
+  public List<T> listWithFilter(Filter filter) {
+    return filter == null ? repository.listAll() : repository.listWithFilter(filter);
+  }
+
   public List<T> listAllPaginated(int pageSize, int pageNum) {
     return repository.listAllPaginated(pageSize, pageNum);
+  }
+
+  public List<T> listWithFilterPaginated(Filter filter, int pageSize, int pageNum) {
+    return filter == null ? repository.listAll() : repository.listWithFilterPaginated(filter, pageSize, pageNum);
   }
 
   public void save(T entity) {
