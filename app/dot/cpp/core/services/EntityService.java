@@ -1,10 +1,15 @@
 package dot.cpp.core.services;
 
 import com.typesafe.config.Config;
-import dot.cpp.repository.models.BaseEntity;
 import dev.morphia.query.experimental.filters.Filter;
+import dot.cpp.core.interfaces.BaseRequest;
+import dot.cpp.repository.models.BaseEntity;
 import dot.cpp.repository.repository.BaseRepository;
 import java.util.List;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import org.bson.types.ObjectId;
+import org.springframework.beans.BeanUtils;
 
 public class EntityService<T extends BaseEntity> {
   private final BaseRepository<T> repository;
@@ -40,7 +45,9 @@ public class EntityService<T extends BaseEntity> {
   }
 
   public List<T> listWithFilterPaginated(Filter filter, int pageNum) {
-    return filter == null ? repository.listAllPaginated(pageSize, pageNum - 1) : repository.listWithFilterPaginated(filter, pageSize, pageNum - 1);
+    return filter == null
+        ? repository.listAllPaginated(pageSize, pageNum - 1)
+        : repository.listWithFilterPaginated(filter, pageSize, pageNum - 1);
   }
 
   public long count() {
@@ -67,11 +74,38 @@ public class EntityService<T extends BaseEntity> {
 
   public void save(T entity) {
     repository.save(entity);
-    //TODO exceptions
   }
 
   public void delete(T entity) {
     repository.delete(entity);
-    //TODO exceptions
+  }
+
+  public <S extends BaseRequest> S getRequest(String id, S request, BiConsumer<S, T>... consumers) {
+    if (id == null || id.isEmpty()) {
+      return request;
+    }
+
+    final var dbEntity = findById(id);
+    BeanUtils.copyProperties(dbEntity, request);
+    for (BiConsumer<S, T> consumer : consumers) {
+      consumer.accept(request, dbEntity);
+    }
+
+    return request;
+  }
+
+  public <S extends BaseRequest> void save(
+      String entityId, T entity, S request, Consumer<T>... consumers) {
+
+    BeanUtils.copyProperties(request, entity);
+    for (Consumer<T> consumer : consumers) {
+      consumer.accept(entity);
+    }
+
+    if (entityId != null && !entityId.isEmpty()) {
+      entity.setId(new ObjectId(entityId));
+    }
+
+    save(entity);
   }
 }
