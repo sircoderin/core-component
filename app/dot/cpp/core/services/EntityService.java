@@ -3,6 +3,7 @@ package dot.cpp.core.services;
 import com.typesafe.config.Config;
 import dev.morphia.query.experimental.filters.Filter;
 import dev.morphia.query.experimental.filters.Filters;
+import dot.cpp.core.builders.FilterBuilder;
 import dot.cpp.core.interfaces.BaseRequest;
 import dot.cpp.repository.models.BaseEntity;
 import dot.cpp.repository.repository.BaseRepository;
@@ -31,10 +32,12 @@ public class EntityService<T extends BaseEntity> {
 
   public List<T> listByIds(List<String> values) {
     return repository.listWithFilter(
-        Filters.or(
-            values.stream()
-                .map(value -> Filters.eq("_id", new ObjectId(value)))
-                .toArray(Filter[]::new)));
+        FilterBuilder.newInstance()
+            .or(
+                values.stream()
+                    .map(value -> Filters.eq("_id", new ObjectId(value)))
+                    .toArray(Filter[]::new))
+            .build());
   }
 
   public List<T> listByField(String field, String value) {
