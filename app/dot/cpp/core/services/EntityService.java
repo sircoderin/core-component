@@ -4,6 +4,7 @@ import com.typesafe.config.Config;
 import dev.morphia.query.experimental.filters.Filter;
 import dev.morphia.query.experimental.filters.Filters;
 import dot.cpp.core.builders.FilterBuilder;
+import dot.cpp.core.exceptions.EntityNotFoundException;
 import dot.cpp.core.interfaces.BaseRequest;
 import dot.cpp.repository.models.BaseEntity;
 import dot.cpp.repository.repository.BaseRepository;
@@ -22,12 +23,24 @@ public class EntityService<T extends BaseEntity> {
     this.pageSize = config.getInt("list.page.size");
   }
 
-  public T findById(String id) {
-    return repository.findById(id);
+  public T findById(String id) throws EntityNotFoundException {
+    if (id == null || id.isBlank()) {
+      throw new EntityNotFoundException();
+    }
+
+    final var entity = repository.findById(id);
+    if (entity == null) {
+      throw new EntityNotFoundException();
+    }
+    return entity;
   }
 
-  public T findByField(String field, String value) {
-    return repository.findByField(field, value);
+  public T findByField(String field, String value) throws EntityNotFoundException {
+    final var entity = repository.findByField(field, value);
+    if (entity == null) {
+      throw new EntityNotFoundException();
+    }
+    return entity;
   }
 
   public List<T> listByIds(List<String> values) {
@@ -92,7 +105,8 @@ public class EntityService<T extends BaseEntity> {
     repository.delete(entity);
   }
 
-  public <S extends BaseRequest> S getRequest(String id, S request, BiConsumer<S, T>... consumers) {
+  public <S extends BaseRequest> S getRequest(String id, S request, BiConsumer<S, T>... consumers)
+      throws EntityNotFoundException {
     if (id == null || id.isEmpty()) {
       return request;
     }
