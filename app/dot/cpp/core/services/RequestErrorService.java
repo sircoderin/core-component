@@ -63,8 +63,9 @@ public final class RequestErrorService {
     return redirect(request.uri()).flashing(DANGER, getErrorMessage(webForm.errors(), messages));
   }
 
-  public Result handleErrorWithMessage(Http.Request request, Call call, String message) {
-    return redirect(call).flashing(DANGER, messagesApi.preferred(request).apply(message));
+  public Result handleErrorFromException(Http.Request request, Call call, Exception e) {
+    logger.error("", e);
+    return redirect(call).flashing(DANGER, messagesApi.preferred(request).apply(e.getMessage()));
   }
 
   private String getErrorMessage(List<ValidationError> validationErrors, Messages messages) {
