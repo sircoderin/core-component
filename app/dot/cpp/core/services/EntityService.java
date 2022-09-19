@@ -24,7 +24,7 @@ public class EntityService<T extends BaseEntity> {
   }
 
   public T findById(String id) throws EntityNotFoundException {
-    if (id == null || id.isBlank()) {
+    if (isEmpty(id)) {
       throw new EntityNotFoundException();
     }
 
@@ -36,11 +36,18 @@ public class EntityService<T extends BaseEntity> {
   }
 
   public T findByField(String field, String value) throws EntityNotFoundException {
+    if(isEmpty(field) || isEmpty(value)) {
+      throw new EntityNotFoundException();
+    }
     final var entity = repository.findByField(field, value);
     if (entity == null) {
       throw new EntityNotFoundException();
     }
     return entity;
+  }
+
+  private static boolean isEmpty(String string) {
+    return string == null || string.isBlank();
   }
 
   public List<T> listByIds(List<String> values) {
@@ -107,7 +114,7 @@ public class EntityService<T extends BaseEntity> {
 
   public <S extends BaseRequest> S getRequest(String id, S request, BiConsumer<S, T>... consumers)
       throws EntityNotFoundException {
-    if (id == null || id.isEmpty()) {
+    if (isEmpty(id)) {
       return request;
     }
 
