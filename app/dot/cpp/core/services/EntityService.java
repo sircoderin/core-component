@@ -36,7 +36,7 @@ public class EntityService<T extends BaseEntity> {
   }
 
   public T findByField(String field, String value) throws EntityNotFoundException {
-    if(isEmpty(field) || isEmpty(value)) {
+    if (isEmpty(field) || isEmpty(value)) {
       throw new EntityNotFoundException();
     }
     final var entity = repository.findByField(field, value);
