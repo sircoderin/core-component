@@ -12,13 +12,18 @@ import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import org.bson.types.ObjectId;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 
-public class EntityService<T extends BaseEntity> {
+public abstract class EntityService<T extends BaseEntity> {
+
+  protected final Logger logger = LoggerFactory.getLogger(getClass());
+
   private final BaseRepository<T> repository;
   private final int pageSize;
 
-  public EntityService(BaseRepository<T> repository, Config config) {
+  protected EntityService(BaseRepository<T> repository, Config config) {
     this.repository = repository;
     this.pageSize = config.getInt("list.page.size");
   }
@@ -141,4 +146,10 @@ public class EntityService<T extends BaseEntity> {
 
     save(entity);
   }
+
+  public T findByIdOrGetNewEntity(String id) throws EntityNotFoundException {
+    return (id == null || id.isBlank()) ? getNewEntity() : findById(id);
+  }
+
+  public abstract T getNewEntity();
 }
