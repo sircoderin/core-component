@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class FilterBuilder {
@@ -30,10 +31,7 @@ public class FilterBuilder {
   }
 
   public FilterBuilder and(List<Filter> filters) {
-    if (!filters.isEmpty()) {
-      this.filter = Filters.and(getFilters(filters));
-    }
-    return this;
+    return operation(filters, Filters::and);
   }
 
   public FilterBuilder and(Filter... filters) {
@@ -41,10 +39,7 @@ public class FilterBuilder {
   }
 
   public FilterBuilder or(List<Filter> filters) {
-    if (!filters.isEmpty()) {
-      this.filter = Filters.or(getFilters(filters));
-    }
-    return this;
+    return operation(filters, Filters::or);
   }
 
   public FilterBuilder or(Filter... filters) {
@@ -52,10 +47,7 @@ public class FilterBuilder {
   }
 
   public FilterBuilder nor(List<Filter> filters) {
-    if (!filters.isEmpty()) {
-      this.filter = Filters.nor(getFilters(filters));
-    }
-    return this;
+    return operation(filters, Filters::nor);
   }
 
   public FilterBuilder nor(Filter... filters) {
@@ -75,5 +67,12 @@ public class FilterBuilder {
 
   public Filter[] getNonNullFilters(List<Filter> filters) {
     return filters.stream().filter(Objects::nonNull).toArray(Filter[]::new);
+  }
+
+  private FilterBuilder operation(List<Filter> filters, Function<Filter[], Filter> function) {
+    if (!filters.isEmpty()) {
+      this.filter = function.apply(getFilters(filters));
+    }
+    return this;
   }
 }
