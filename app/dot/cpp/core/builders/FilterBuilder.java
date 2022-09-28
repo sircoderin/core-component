@@ -51,6 +51,17 @@ public class FilterBuilder {
     return or(new ArrayList<>(List.of(filters)));
   }
 
+  public FilterBuilder nor(List<Filter> filters) {
+    if (!filters.isEmpty()) {
+      this.filter = Filters.nor(getFilters(filters));
+    }
+    return this;
+  }
+
+  public FilterBuilder nor(Filter... filters) {
+    return nor(new ArrayList<>(List.of(filters)));
+  }
+
   private Filter[] getFilters(List<Filter> filters) {
     if (filter != null) {
       filters.add(filter);
