@@ -2,7 +2,6 @@ package dot.cpp.core.builders;
 
 import dev.morphia.query.experimental.filters.Filter;
 import dev.morphia.query.experimental.filters.Filters;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -35,7 +34,11 @@ public class FilterBuilder {
   }
 
   public FilterBuilder and(Filter... filters) {
-    return and(getNonNullFilters(filters));
+    return and(getFiltersListFromArray(filters));
+  }
+
+  public FilterBuilder andEq(String fieldName, List<?> values) {
+    return and(eq(fieldName, values));
   }
 
   public FilterBuilder or(List<Filter> filters) {
@@ -43,7 +46,11 @@ public class FilterBuilder {
   }
 
   public FilterBuilder or(Filter... filters) {
-    return or(new ArrayList<>(List.of(filters)));
+    return or(getFiltersListFromArray(filters));
+  }
+
+  public FilterBuilder orEq(String fieldName, List<?> values) {
+    return or(eq(fieldName, values));
   }
 
   public FilterBuilder nor(List<Filter> filters) {
@@ -51,28 +58,33 @@ public class FilterBuilder {
   }
 
   public FilterBuilder nor(Filter... filters) {
-    return nor(new ArrayList<>(List.of(filters)));
+    return nor(getFiltersListFromArray(filters));
   }
 
-  private Filter[] getFilters(List<Filter> filters) {
-    if (filter != null) {
-      filters.add(filter);
+  public FilterBuilder norEq(String fieldName, List<?> values) {
+    return nor(eq(fieldName, values));
+  }
+
+  public FilterBuilder operation(List<Filter> filters, Function<Filter[], Filter> function) {
+    if (!filters.isEmpty()) {
+      if (filter != null) {
+        filters.add(filter);
+      }
+
+      this.filter = function.apply(getFiltersArrayFromList(filters));
     }
-    return getNonNullFilters(filters);
+    return this;
   }
 
-  public List<Filter> getNonNullFilters(Filter[] filters) {
+  private Filter[] eq(String fieldName, List<?> values) {
+    return values.stream().map(value -> Filters.eq(fieldName, value)).toArray(Filter[]::new);
+  }
+
+  private List<Filter> getFiltersListFromArray(Filter[] filters) {
     return Arrays.stream(filters).filter(Objects::nonNull).collect(Collectors.toList());
   }
 
-  public Filter[] getNonNullFilters(List<Filter> filters) {
+  private Filter[] getFiltersArrayFromList(List<Filter> filters) {
     return filters.stream().filter(Objects::nonNull).toArray(Filter[]::new);
-  }
-
-  private FilterBuilder operation(List<Filter> filters, Function<Filter[], Filter> function) {
-    if (!filters.isEmpty()) {
-      this.filter = function.apply(getFilters(filters));
-    }
-    return this;
   }
 }

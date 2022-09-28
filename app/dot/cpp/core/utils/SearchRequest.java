@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import dot.cpp.core.helpers.FilterHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import play.data.validation.Constraints;
@@ -49,7 +50,7 @@ public class SearchRequest implements QueryStringBindable<SearchRequest> {
       return null;
     }
 
-    return Filters.regex(field).pattern("(?i).*" + filter + ".*");
+    return FilterHelper.contains(field, filter);
   }
 
   /**
@@ -64,7 +65,7 @@ public class SearchRequest implements QueryStringBindable<SearchRequest> {
 
     final var filters = new ArrayList<Filter>();
     filterFields.forEach(
-        field -> filters.add(Filters.regex(field).pattern("(?i).*" + filter + ".*")));
+        field -> filters.add(FilterHelper.contains(field, filter)));
 
     return Filters.or(filters.toArray(new Filter[0]));
   }

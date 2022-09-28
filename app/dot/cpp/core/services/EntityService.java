@@ -2,7 +2,6 @@ package dot.cpp.core.services;
 
 import com.typesafe.config.Config;
 import dev.morphia.query.experimental.filters.Filter;
-import dev.morphia.query.experimental.filters.Filters;
 import dot.cpp.core.builders.FilterBuilder;
 import dot.cpp.core.exceptions.EntityNotFoundException;
 import dot.cpp.core.interfaces.BaseRequest;
@@ -11,6 +10,7 @@ import dot.cpp.repository.repository.BaseRepository;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,18 +55,17 @@ public abstract class EntityService<T extends BaseEntity> {
     return string == null || string.isBlank();
   }
 
-  public List<T> listByIds(List<String> values) {
-    return repository.listWithFilter(
-        FilterBuilder.newInstance()
-            .or(
-                values.stream()
-                    .map(value -> Filters.eq("_id", new ObjectId(value)))
-                    .toArray(Filter[]::new))
-            .build());
+  public List<T> listByIds(List<String> ids) {
+    return listByFieldWithPossibleValues(
+        "_id", ids.stream().map(ObjectId::new).collect(Collectors.toList()));
   }
 
   public List<T> listByField(String field, String value) {
     return repository.listByField(field, value);
+  }
+
+  public List<T> listByFieldWithPossibleValues(String field, List<?> values) {
+    return repository.listWithFilter(FilterBuilder.newInstance().orEq(field, values).build());
   }
 
   public List<T> listAll() {

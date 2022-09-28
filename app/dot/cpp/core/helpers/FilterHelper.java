@@ -33,4 +33,8 @@ public final class FilterHelper {
         .map(entity -> Filters.eq(idFieldName, entity.getId().toString()))
         .collect(Collectors.toList());
   }
+
+  public static Filter contains(String fieldName, String value) {
+    return Filters.regex(fieldName).pattern("(?i).*" + value + ".*");
+  }
 }
