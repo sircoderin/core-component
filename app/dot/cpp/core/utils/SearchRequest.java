@@ -73,7 +73,9 @@ public class SearchRequest implements QueryStringBindable<SearchRequest> {
   @Override
   public Optional<SearchRequest> bind(String key, Map<String, String[]> data) {
     final var possibleFilter = data.get("filter");
-    return possibleFilter != null ? Optional.of(SearchRequest.from(possibleFilter[0])) : Optional.empty();
+    return possibleFilter != null
+        ? Optional.of(SearchRequest.from(possibleFilter[0]))
+        : Optional.empty();
   }
 
   @Override
