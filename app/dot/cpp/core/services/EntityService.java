@@ -4,6 +4,7 @@ import com.typesafe.config.Config;
 import dev.morphia.query.experimental.filters.Filter;
 import dot.cpp.core.builders.FilterBuilder;
 import dot.cpp.core.exceptions.EntityNotFoundException;
+import dot.cpp.core.helpers.ValidationHelper;
 import dot.cpp.core.interfaces.BaseRequest;
 import dot.cpp.repository.models.BaseEntity;
 import dot.cpp.repository.repository.BaseRepository;
@@ -29,7 +30,7 @@ public abstract class EntityService<T extends BaseEntity> {
   }
 
   public T findById(String id) throws EntityNotFoundException {
-    if (isEmpty(id)) {
+    if (ValidationHelper.isEmpty(id)) {
       throw new EntityNotFoundException();
     }
 
@@ -41,7 +42,7 @@ public abstract class EntityService<T extends BaseEntity> {
   }
 
   public T findByField(String field, String value) throws EntityNotFoundException {
-    if (isEmpty(field) || isEmpty(value)) {
+    if (ValidationHelper.isEmpty(field) || ValidationHelper.isEmpty(value)) {
       throw new EntityNotFoundException();
     }
     final var entity = repository.findByField(field, value);
@@ -49,10 +50,6 @@ public abstract class EntityService<T extends BaseEntity> {
       throw new EntityNotFoundException();
     }
     return entity;
-  }
-
-  private static boolean isEmpty(String string) {
-    return string == null || string.isBlank();
   }
 
   public List<T> listByIds(List<String> ids) {
@@ -118,7 +115,7 @@ public abstract class EntityService<T extends BaseEntity> {
 
   public <S extends BaseRequest> S getRequest(String id, S request, BiConsumer<S, T>... consumers)
       throws EntityNotFoundException {
-    if (isEmpty(id)) {
+    if (ValidationHelper.isEmpty(id)) {
       return request;
     }
 
@@ -139,7 +136,7 @@ public abstract class EntityService<T extends BaseEntity> {
       consumer.accept(entity);
     }
 
-    if (entityId != null && !entityId.isEmpty()) {
+    if (ValidationHelper.isNotEmpty(entityId)) {
       entity.setId(new ObjectId(entityId));
     }
 
@@ -147,7 +144,7 @@ public abstract class EntityService<T extends BaseEntity> {
   }
 
   public T findByIdOrGetNewEntity(String id) throws EntityNotFoundException {
-    return (id == null || id.isBlank()) ? getNewEntity() : findById(id);
+    return ValidationHelper.isNotEmpty(id) ? findById(id) : getNewEntity();
   }
 
   public abstract T getNewEntity();

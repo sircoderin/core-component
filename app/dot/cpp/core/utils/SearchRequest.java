@@ -64,8 +64,7 @@ public class SearchRequest implements QueryStringBindable<SearchRequest> {
     }
 
     final var filters = new ArrayList<Filter>();
-    filterFields.forEach(
-        field -> filters.add(FilterHelper.contains(field, filter)));
+    filterFields.forEach(field -> filters.add(FilterHelper.contains(field, filter)));
 
     return Filters.or(filters.toArray(new Filter[0]));
   }
