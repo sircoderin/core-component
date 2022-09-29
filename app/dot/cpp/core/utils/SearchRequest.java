@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import dot.cpp.core.helpers.FilterHelper;
+import dot.cpp.core.helpers.ValidationHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import play.data.validation.Constraints;
@@ -59,7 +60,7 @@ public class SearchRequest implements QueryStringBindable<SearchRequest> {
    * @return {@link Filter}
    */
   public Filter getFilterForFields(List<String> filterFields) {
-    if (filter == null || filter.isBlank()) {
+    if (ValidationHelper.isEmpty(filter)) {
       return null;
     }
 
@@ -72,10 +73,7 @@ public class SearchRequest implements QueryStringBindable<SearchRequest> {
   @Override
   public Optional<SearchRequest> bind(String key, Map<String, String[]> data) {
     final var possibleFilter = data.get("filter");
-    if (possibleFilter == null) {
-      return Optional.empty();
-    }
-    return Optional.of(SearchRequest.from(possibleFilter[0]));
+    return possibleFilter != null ? Optional.of(SearchRequest.from(possibleFilter[0])) : Optional.empty();
   }
 
   @Override
