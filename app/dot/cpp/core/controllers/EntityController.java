@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import play.data.FormFactory;
 import play.i18n.MessagesApi;
+import play.mvc.Call;
 import play.mvc.Controller;
 
 public class EntityController extends Controller {
@@ -20,5 +21,9 @@ public class EntityController extends Controller {
     this.formFactory = formFactory;
     this.messagesApi = messagesApi;
     this.requestErrorService = requestErrorService;
+  }
+
+  public play.mvc.Result getSuccessfulRedirect(Call call) {
+    return redirect(call).flashing("alert-success", "Operatiune finalizata cu success");
   }
 }

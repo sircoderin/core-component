@@ -2,6 +2,7 @@ package dot.cpp.core.helpers;
 
 import dev.morphia.query.experimental.filters.Filter;
 import dev.morphia.query.experimental.filters.Filters;
+import dot.cpp.core.interfaces.BaseRequest;
 import dot.cpp.core.services.EntityService;
 import dot.cpp.core.utils.BindableLocalDate;
 import dot.cpp.repository.models.BaseEntity;
@@ -24,7 +25,7 @@ public final class FilterHelper {
   }
 
   public static List<Filter> getIdFilters(
-      EntityService<? extends BaseEntity> entityService,
+      EntityService<? extends BaseEntity, ? extends BaseRequest> entityService,
       String searchValue,
       String searchFieldName,
       String idFieldName) {

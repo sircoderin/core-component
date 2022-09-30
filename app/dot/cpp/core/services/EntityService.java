@@ -17,7 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 
-public abstract class EntityService<T extends BaseEntity> {
+public abstract class EntityService<T extends BaseEntity, S extends BaseRequest> {
 
   protected final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -113,8 +113,8 @@ public abstract class EntityService<T extends BaseEntity> {
     repository.delete(entity);
   }
 
-  public <S extends BaseRequest> S getRequest(String id, S request, BiConsumer<S, T>... consumers)
-      throws EntityNotFoundException {
+  public S getRequest(String id, BiConsumer<S, T>... consumers) throws EntityNotFoundException {
+    final var request = getNewRequest();
     if (ValidationHelper.isEmpty(id)) {
       return request;
     }
@@ -128,8 +128,7 @@ public abstract class EntityService<T extends BaseEntity> {
     return request;
   }
 
-  public <S extends BaseRequest> void save(
-      String entityId, T entity, S request, Consumer<T>... consumers) {
+  public void save(String entityId, T entity, S request, Consumer<T>... consumers) {
 
     BeanUtils.copyProperties(request, entity);
     for (Consumer<T> consumer : consumers) {
@@ -148,4 +147,6 @@ public abstract class EntityService<T extends BaseEntity> {
   }
 
   public abstract T getNewEntity();
+
+  public abstract S getNewRequest();
 }
