@@ -1,8 +1,10 @@
 package dot.cpp.core.controllers;
 
+import com.typesafe.config.ConfigFactory;
 import dot.cpp.core.services.RequestErrorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import play.api.ConfigLoader;
 import play.data.FormFactory;
 import play.i18n.MessagesApi;
 import play.mvc.Call;
@@ -24,6 +26,6 @@ public class EntityController extends Controller {
   }
 
   public play.mvc.Result getSuccessfulRedirect(Call call) {
-    return redirect(call).flashing("alert-success", "Operatiune finalizata cu success");
+    return redirect(call).flashing("alert-success", ConfigFactory.load().getString("action.success"));
   }
 }
