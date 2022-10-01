@@ -25,7 +25,7 @@ public class EntityController extends Controller {
   }
 
   public play.mvc.Result getSuccessfulRedirect(Call call) {
-    return redirect(call).flashing("alert-success",
-        ConfigFactory.load().getString("action.success"));
+    return redirect(call)
+        .flashing("alert-success", ConfigFactory.load().getString("action.success"));
   }
 }
