@@ -83,6 +83,11 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
         : repository.listWithFilterPaginated(filter, pageSize, pageNum - 1);
   }
 
+  public List<T> getEntitiesByPage(List<T> entities, int pageNum) {
+    final var toIndex = Math.min(entities.size(), pageNum * pageSize);
+    return entities.subList((pageNum - 1) * pageSize, toIndex);
+  }
+
   public long count() {
     return repository.count();
   }
@@ -91,18 +96,20 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
     return filter == null ? repository.count() : repository.count(filter);
   }
 
-  public int getNumberPages() {
+  public int getNumberOfPages() {
     final var numEntities = count();
-    return (int) getNumberPages(numEntities);
+    return getNumberOfPages(numEntities);
   }
 
-  public int getNumberPages(Filter filter) {
+  public int getNumberOfPages(Filter filter) {
     final var numEntities = count(filter);
-    return (int) getNumberPages(numEntities);
+    return getNumberOfPages(numEntities);
   }
 
-  private long getNumberPages(long numEntities) {
-    return numEntities % pageSize == 0 ? numEntities / pageSize : numEntities / pageSize + 1;
+  public int getNumberOfPages(long numEntities) {
+    final var numberOfPages =
+        numEntities % pageSize == 0 ? numEntities / pageSize : numEntities / pageSize + 1;
+    return (int) numberOfPages;
   }
 
   public void save(T entity) {
