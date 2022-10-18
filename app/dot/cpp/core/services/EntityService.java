@@ -1,6 +1,7 @@
 package dot.cpp.core.services;
 
 import com.typesafe.config.Config;
+import dev.morphia.query.Sort;
 import dev.morphia.query.experimental.filters.Filter;
 import dot.cpp.core.builders.FilterBuilder;
 import dot.cpp.core.exceptions.EntityNotFoundException;
@@ -86,6 +87,14 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
   public <U> List<U> getEntitiesByPage(List<U> entities, int pageNum) {
     final var toIndex = Math.min(entities.size(), pageNum * pageSize);
     return entities.subList((pageNum - 1) * pageSize, toIndex);
+  }
+
+  public T getEntityWithMaxFieldValue(String field) {
+    return repository.getFirstSorted(Sort.descending(field));
+  }
+
+  public T getEntityWithMinFieldValue(String field) {
+    return repository.getFirstSorted(Sort.ascending(field));
   }
 
   public long count() {
