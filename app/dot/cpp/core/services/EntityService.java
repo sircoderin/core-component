@@ -84,7 +84,7 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
         : repository.listWithFilterPaginated(filter, pageSize, pageNum - 1);
   }
 
-  public List<T> getEntitiesByPage(List<T> entities, int pageNum) {
+  public <U> List<U> getEntitiesByPage(List<U> entities, int pageNum) {
     final var toIndex = Math.min(entities.size(), pageNum * pageSize);
     return entities.subList((pageNum - 1) * pageSize, toIndex);
   }
