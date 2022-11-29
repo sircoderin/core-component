@@ -105,6 +105,14 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
     return filter == null ? repository.count() : repository.count(filter);
   }
 
+  public long sum(String field) {
+    return repository.sum(field);
+  }
+
+  public long sum(String field, Filter filter) {
+    return filter == null ? repository.sum(field) : repository.sum(field, filter);
+  }
+
   public int getNumberOfPages() {
     final var numEntities = count();
     return getNumberOfPages(numEntities);
