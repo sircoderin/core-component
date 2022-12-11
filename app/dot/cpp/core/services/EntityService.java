@@ -53,35 +53,36 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
     return entity;
   }
 
-  public List<T> listByIds(List<String> ids) {
+  public List<T> listByIds(List<String> ids, Sort... sortBy) {
     return listByFieldWithPossibleValues(
-        "_id", ids.stream().map(ObjectId::new).collect(Collectors.toList()));
+        "_id", ids.stream().map(ObjectId::new).collect(Collectors.toList()), sortBy);
   }
 
-  public List<T> listByField(String field, String value) {
-    return repository.listByField(field, value);
+  public List<T> listByField(String field, String value, Sort... sortBy) {
+    return repository.listByField(field, value, sortBy);
   }
 
-  public List<T> listByFieldWithPossibleValues(String field, List<?> values) {
-    return repository.listWithFilter(FilterBuilder.newInstance().orEq(field, values).build());
+  public List<T> listByFieldWithPossibleValues(String field, List<?> values, Sort... sortBy) {
+    return repository.listWithFilter(
+        FilterBuilder.newInstance().orEq(field, values).build(), sortBy);
   }
 
-  public List<T> listAll() {
-    return repository.listAll();
+  public List<T> listAll(Sort... sortBy) {
+    return repository.listAll(sortBy);
   }
 
-  public List<T> listWithFilter(Filter filter) {
-    return filter == null ? repository.listAll() : repository.listWithFilter(filter);
+  public List<T> listWithFilter(Filter filter, Sort... sortBy) {
+    return filter == null ? repository.listAll(sortBy) : repository.listWithFilter(filter, sortBy);
   }
 
-  public List<T> listAllPaginated(int pageNum) {
-    return repository.listAllPaginated(pageSize, pageNum - 1);
+  public List<T> listAllPaginated(int pageNum, Sort... sortBy) {
+    return repository.listAllPaginated(pageSize, pageNum - 1, sortBy);
   }
 
-  public List<T> listWithFilterPaginated(Filter filter, int pageNum) {
+  public List<T> listWithFilterPaginated(Filter filter, int pageNum, Sort... sortBy) {
     return filter == null
-        ? repository.listAllPaginated(pageSize, pageNum - 1)
-        : repository.listWithFilterPaginated(filter, pageSize, pageNum - 1);
+        ? repository.listAllPaginated(pageSize, pageNum - 1, sortBy)
+        : repository.listWithFilterPaginated(filter, pageSize, pageNum - 1, sortBy);
   }
 
   public <U> List<U> getEntitiesByPage(List<U> entities, int pageNum) {
