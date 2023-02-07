@@ -22,7 +22,7 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
 
   protected final Logger logger = LoggerFactory.getLogger(getClass());
 
-  private final BaseRepository<T> repository;
+  protected final BaseRepository<T> repository;
   private final int pageSize;
 
   protected EntityService(BaseRepository<T> repository, Config config) {
