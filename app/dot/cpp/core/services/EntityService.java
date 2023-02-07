@@ -20,9 +20,9 @@ import org.springframework.beans.BeanUtils;
 
 public abstract class EntityService<T extends BaseEntity, S extends BaseRequest> {
 
-  protected final Logger logger = LoggerFactory.getLogger(getClass());
+  private final Logger logger = LoggerFactory.getLogger(getClass());
 
-  protected final BaseRepository<T> repository;
+  private final BaseRepository<T> repository;
   private final int pageSize;
 
   protected EntityService(BaseRepository<T> repository, Config config) {
@@ -130,10 +130,6 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
     return (int) numberOfPages;
   }
 
-  public void save(T entity) {
-    repository.save(entity);
-  }
-
   public void delete(T entity) {
     repository.delete(entity);
   }
@@ -151,6 +147,10 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
     }
 
     return request;
+  }
+
+  public void save(T entity) {
+    repository.save(entity);
   }
 
   public void save(String entityId, T entity, S request, Consumer<T>... consumers) {
