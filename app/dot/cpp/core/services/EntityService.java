@@ -9,6 +9,7 @@ import dot.cpp.core.helpers.ValidationHelper;
 import dot.cpp.core.interfaces.BaseRequest;
 import dot.cpp.repository.models.BaseEntity;
 import dot.cpp.repository.repository.BaseRepository;
+import java.time.Instant;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -134,6 +135,37 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
     repository.save(entity);
   }
 
+  public void save(T entity, String userId) {
+    setHistoryFields(entity, userId);
+    save(entity);
+  }
+
+  // bonkers, why would I send the entityId and not have it in the entity parameter itself
+  // why would I not use findByIdOrGetNewEntity instead
+  public void save(String entityId, T entity, S request, Consumer<T>... consumers) {
+
+    BeanUtils.copyProperties(request, entity);
+    for (Consumer<T> consumer : consumers) {
+      consumer.accept(entity);
+    }
+
+    if (ValidationHelper.isNotEmpty(entityId)) {
+      entity.setId(new ObjectId(entityId));
+    }
+
+    save(entity, request.getUserId());
+  }
+
+  protected void setHistoryFields(T entity, String userId) {
+    if (entity.getId() == null) {
+      entity.setCreatedAt(Instant.now().getEpochSecond());
+      entity.setCreatedBy(userId);
+    } else {
+      entity.setModifiedAt(Instant.now().getEpochSecond());
+      entity.setModifiedBy(userId);
+    }
+  }
+
   public void delete(T entity) {
     repository.delete(entity);
   }
@@ -151,20 +183,6 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
     }
 
     return request;
-  }
-
-  public void save(String entityId, T entity, S request, Consumer<T>... consumers) {
-
-    BeanUtils.copyProperties(request, entity);
-    for (Consumer<T> consumer : consumers) {
-      consumer.accept(entity);
-    }
-
-    if (ValidationHelper.isNotEmpty(entityId)) {
-      entity.setId(new ObjectId(entityId));
-    }
-
-    save(entity);
   }
 
   public T findByIdOrGetNewEntity(String id) throws EntityNotFoundException {

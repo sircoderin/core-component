@@ -1,3 +1,14 @@
 package dot.cpp.core.interfaces;
 
-public interface BaseRequest {}
+public abstract class BaseRequest {
+
+  protected String userId;
+
+  public void setUserId(String userId) {
+    this.userId = userId;
+  }
+
+  public String getUserId() {
+    return userId;
+  }
+}
