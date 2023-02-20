@@ -2,7 +2,7 @@ package dot.cpp.core.services;
 
 import com.typesafe.config.Config;
 import dev.morphia.query.Sort;
-import dev.morphia.query.experimental.filters.Filter;
+import dev.morphia.query.filters.Filter;
 import dot.cpp.core.builders.FilterBuilder;
 import dot.cpp.core.exceptions.EntityNotFoundException;
 import dot.cpp.core.helpers.ValidationHelper;
