@@ -135,11 +135,6 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
     repository.save(entity);
   }
 
-  public void save(T entity, String userId) {
-    setHistoryFields(entity, userId);
-    save(entity);
-  }
-
   // bonkers, why would I send the entityId and not have it in the entity parameter itself
   // why would I not use findByIdOrGetNewEntity instead
   public void save(String entityId, T entity, S request, Consumer<T>... consumers) {
@@ -153,7 +148,16 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
       entity.setId(new ObjectId(entityId));
     }
 
-    save(entity, request.getUserId());
+    saveWithHistory(entity, request.getUserId());
+  }
+
+  public void saveWithHistory(T entity) {
+    repository.saveWithHistory(entity);
+  }
+
+  public void saveWithHistory(T entity, String userId) {
+    setHistoryFields(entity, userId);
+    repository.saveWithHistory(entity);
   }
 
   protected void setHistoryFields(T entity, String userId) {
