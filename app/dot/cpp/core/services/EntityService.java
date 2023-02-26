@@ -7,14 +7,17 @@ import dot.cpp.core.builders.FilterBuilder;
 import dot.cpp.core.exceptions.EntityNotFoundException;
 import dot.cpp.core.helpers.ValidationHelper;
 import dot.cpp.core.interfaces.BaseRequest;
+import dot.cpp.core.models.HistoryEntry;
 import dot.cpp.repository.models.BaseEntity;
 import dot.cpp.repository.repository.BaseRepository;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.bson.types.ObjectId;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
@@ -40,7 +43,85 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
     if (entity == null) {
       throw new EntityNotFoundException();
     }
+
     return entity;
+  }
+
+  public T findByHistoryId(String id) throws EntityNotFoundException {
+    if (ValidationHelper.isEmpty(id)) {
+      throw new EntityNotFoundException();
+    }
+
+    final var entity = repository.findByHistoryId(id);
+    if (entity == null) {
+      throw new EntityNotFoundException();
+    }
+
+    return entity;
+  }
+
+  public List<HistoryEntry> getHistoryEntriesById(String id) throws EntityNotFoundException {
+    if (ValidationHelper.isEmpty(id)) {
+      throw new EntityNotFoundException();
+    }
+
+    final var entity = repository.findById(id);
+    return getHistoryEntries(entity);
+  }
+
+  public List<HistoryEntry> getHistoryEntriesByTrackingId(String trackingId)
+      throws EntityNotFoundException {
+    if (ValidationHelper.isEmpty(trackingId)) {
+      throw new EntityNotFoundException();
+    }
+
+    final var entity = repository.findByField("trackingId", trackingId);
+    return getHistoryEntries(entity);
+  }
+
+  @NotNull
+  private List<HistoryEntry> getHistoryEntries(T entity) throws EntityNotFoundException {
+    if (entity == null) {
+      throw new EntityNotFoundException();
+    }
+
+    final var historyEntries = new ArrayList<HistoryEntry>();
+    final var historyEntities = repository.listHistory(entity.getTrackingId());
+
+    if (historyEntities.isEmpty()) {
+      return historyEntries;
+    }
+
+    // current entity, maybe it should be added to history as well, not just the previous changes
+    historyEntries.add(
+        new HistoryEntry(
+            entity.getModifiedBy(),
+            entity.getModifiedAt().toString(),
+            entity.getModifiedComment(),
+            entity.getStrId()));
+
+    final var firstHistoryEntity = historyEntities.remove(historyEntities.size() - 1);
+
+    historyEntities.forEach(
+        historyEntity ->
+            historyEntries.add(
+                new HistoryEntry(
+                    historyEntity.getModifiedBy(),
+                    historyEntity.getModifiedAt().toString(),
+                    historyEntity.getModifiedComment(),
+                    historyEntity.getStrId())));
+
+    // first history entry (entity creation)
+    // how about not using createdAt and createdBy and using the same fields (modifiedAt and
+    // modifiedBy)
+    historyEntries.add(
+        new HistoryEntry(
+            firstHistoryEntity.getCreatedBy(),
+            firstHistoryEntity.getCreatedAt().toString(),
+            "",
+            firstHistoryEntity.getStrId()));
+
+    return historyEntries;
   }
 
   public T findByField(String field, String value) throws EntityNotFoundException {

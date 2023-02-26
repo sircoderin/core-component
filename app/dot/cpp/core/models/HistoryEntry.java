@@ -4,15 +4,15 @@ public class HistoryEntry {
 
   public final String userName;
 
-  public final Long time;
+  public final String dateTime;
 
   public final String comment;
 
   public final String id;
 
-  public HistoryEntry(String userName, Long time, String comment, String id) {
+  public HistoryEntry(String userName, String dateTime, String comment, String id) {
     this.userName = userName;
-    this.time = time;
+    this.dateTime = dateTime;
     this.comment = comment;
     this.id = id;
   }
