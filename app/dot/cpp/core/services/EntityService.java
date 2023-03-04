@@ -53,6 +53,14 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
     return entity;
   }
 
+  public List<T> list(int skip, int length, Sort... sortBy) {
+    return repository.list(null, skip, length, sortBy);
+  }
+
+  public List<T> list(Filter filter, int skip, int length, Sort... sortBy) {
+    return repository.list(filter, skip, length, sortBy);
+  }
+
   public List<T> listByIds(List<String> ids, Sort... sortBy) {
     return listByFieldWithPossibleValues(
         "_id", ids.stream().map(ObjectId::new).collect(Collectors.toList()), sortBy);
