@@ -10,7 +10,6 @@ import dot.cpp.core.interfaces.BaseRequest;
 import dot.cpp.core.models.HistoryEntry;
 import dot.cpp.repository.models.BaseEntity;
 import dot.cpp.repository.repository.BaseRepository;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
@@ -93,33 +92,10 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
     }
 
     // current entity, maybe it should be added to history as well, not just the previous changes
-    historyEntries.add(
-        new HistoryEntry(
-            entity.getModifiedBy(),
-            entity.getModifiedAt().toString(),
-            entity.getModifiedComment(),
-            entity.getStrId()));
-
-    final var firstHistoryEntity = historyEntities.remove(historyEntities.size() - 1);
+    historyEntries.add(HistoryEntry.fromBaseEntity(entity));
 
     historyEntities.forEach(
-        historyEntity ->
-            historyEntries.add(
-                new HistoryEntry(
-                    historyEntity.getModifiedBy(),
-                    historyEntity.getModifiedAt().toString(),
-                    historyEntity.getModifiedComment(),
-                    historyEntity.getStrId())));
-
-    // first history entry (entity creation)
-    // how about not using createdAt and createdBy and using the same fields (modifiedAt and
-    // modifiedBy)
-    historyEntries.add(
-        new HistoryEntry(
-            firstHistoryEntity.getCreatedBy(),
-            firstHistoryEntity.getCreatedAt().toString(),
-            "",
-            firstHistoryEntity.getStrId()));
+        historyEntity -> historyEntries.add(HistoryEntry.fromBaseEntity(historyEntity)));
 
     return historyEntries;
   }
@@ -237,18 +213,8 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
   }
 
   public void saveWithHistory(T entity, String userId) {
-    setHistoryFields(entity, userId);
+    entity.setModifiedBy(userId);
     repository.saveWithHistory(entity);
-  }
-
-  protected void setHistoryFields(T entity, String userId) {
-    if (entity.getId() == null) {
-      entity.setCreatedAt(Instant.now().getEpochSecond());
-      entity.setCreatedBy(userId);
-    } else {
-      entity.setModifiedAt(Instant.now().getEpochSecond());
-      entity.setModifiedBy(userId);
-    }
   }
 
   public void delete(T entity) {

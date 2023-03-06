@@ -1,5 +1,7 @@
 package dot.cpp.core.models;
 
+import dot.cpp.repository.models.BaseEntity;
+
 public class HistoryEntry {
 
   public final String userName;
@@ -15,5 +17,13 @@ public class HistoryEntry {
     this.dateTime = dateTime;
     this.comment = comment;
     this.id = id;
+  }
+
+  public static HistoryEntry fromBaseEntity(BaseEntity entity) {
+    return new HistoryEntry(
+        entity.getModifiedBy(),
+        entity.getModifiedAt().toString(),
+        entity.getModifiedComment(),
+        entity.getStrId());
   }
 }
