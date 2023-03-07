@@ -2,7 +2,7 @@ package dot.cpp.core.services;
 
 import com.typesafe.config.Config;
 import dev.morphia.query.Sort;
-import dev.morphia.query.experimental.filters.Filter;
+import dev.morphia.query.filters.Filter;
 import dot.cpp.core.builders.FilterBuilder;
 import dot.cpp.core.exceptions.EntityNotFoundException;
 import dot.cpp.core.helpers.ValidationHelper;
@@ -20,7 +20,7 @@ import org.springframework.beans.BeanUtils;
 
 public abstract class EntityService<T extends BaseEntity, S extends BaseRequest> {
 
-  protected final Logger logger = LoggerFactory.getLogger(getClass());
+  private final Logger logger = LoggerFactory.getLogger(getClass());
 
   private final BaseRepository<T> repository;
   private final int pageSize;
@@ -152,8 +152,8 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
     repository.save(entity);
   }
 
-  // bonkers, why would I send the entityId and not have it in the entity parameter itself
-  // why would I not use findByIdOrGetNewEntity instead
+  // sending an entityId and an entity at the same time is redundant
+  // use findByIdOrGetNewEntity where needed and replace this behaviour
   public void save(String entityId, T entity, S request, Consumer<T>... consumers) {
 
     BeanUtils.copyProperties(request, entity);

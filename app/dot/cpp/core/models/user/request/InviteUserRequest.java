@@ -10,7 +10,7 @@ import play.data.validation.Constraints.Validate;
 import play.libs.Json;
 
 @Validate
-public class InviteUserRequest extends BaseRequest implements Validatable<String> {
+public class InviteUserRequest implements BaseRequest, Validatable<String> {
 
   @Pattern(regexp = Patterns.EMAIL, message = "constraints.field.invalid")
   private String email;

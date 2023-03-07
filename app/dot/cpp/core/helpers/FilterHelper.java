@@ -1,7 +1,7 @@
 package dot.cpp.core.helpers;
 
-import dev.morphia.query.experimental.filters.Filter;
-import dev.morphia.query.experimental.filters.Filters;
+import dev.morphia.query.filters.Filter;
+import dev.morphia.query.filters.Filters;
 import dot.cpp.core.interfaces.BaseRequest;
 import dot.cpp.core.services.EntityService;
 import dot.cpp.core.utils.BindableLocalDate;
@@ -14,6 +14,11 @@ import org.slf4j.LoggerFactory;
 public final class FilterHelper {
 
   private static final Logger logger = LoggerFactory.getLogger(FilterHelper.class);
+
+  public static final String COLUMNS = "columns";
+  public static final String VALUE = "value";
+  public static final String NAME = "name";
+  public static final String DRAW = "draw";
 
   private FilterHelper() {}
 
