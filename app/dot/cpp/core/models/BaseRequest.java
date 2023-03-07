@@ -1,6 +1,5 @@
-package dot.cpp.core.interfaces;
+package dot.cpp.core.models;
 
-// todo move to models
 public abstract class BaseRequest {
 
   protected String userId;

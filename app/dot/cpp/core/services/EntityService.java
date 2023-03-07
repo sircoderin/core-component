@@ -6,7 +6,7 @@ import dev.morphia.query.filters.Filter;
 import dot.cpp.core.builders.FilterBuilder;
 import dot.cpp.core.exceptions.EntityNotFoundException;
 import dot.cpp.core.helpers.ValidationHelper;
-import dot.cpp.core.interfaces.BaseRequest;
+import dot.cpp.core.models.BaseRequest;
 import dot.cpp.repository.models.BaseEntity;
 import dot.cpp.repository.repository.BaseRepository;
 import java.util.List;
