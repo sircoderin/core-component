@@ -48,26 +48,22 @@ public class HistoryService {
   }
 
   @NotNull
-  private List<HistoryEntry> getHistoryEntries(EntityService<?, ?> entityService, BaseEntity entity)
-      throws EntityNotFoundException {
-    if (entity == null) {
-      throw new EntityNotFoundException();
-    }
-
+  private List<HistoryEntry> getHistoryEntries(
+      EntityService<?, ?> entityService, BaseEntity currentState) {
     final var historyEntries = new ArrayList<HistoryEntry>();
-    final var historyEntities = entityService.listHistory(entity.getTrackingId());
+    final var historyStates = entityService.listHistory(currentState.getTrackingId());
 
-    final var userIds =
-        historyEntities.stream().map(BaseEntity::getModifiedBy).collect(Collectors.toSet());
-    userIds.add(entity.getModifiedBy());
+    final var modifiedByUserIdSet =
+        historyStates.stream().map(BaseEntity::getModifiedBy).collect(Collectors.toSet());
+    modifiedByUserIdSet.add(currentState.getModifiedBy());
 
     final var users =
-        userService.listByIds(new ArrayList<>(userIds)).stream()
+        userService.listByIds(new ArrayList<>(modifiedByUserIdSet)).stream()
             .collect(Collectors.toMap(User::getStrId, User::getUserName));
 
     // current entity is added first
-    historyEntries.add(getHistoryEntry(users, entity));
-    historyEntities.forEach(
+    historyEntries.add(getHistoryEntry(users, currentState));
+    historyStates.forEach(
         historyEntity -> historyEntries.add(getHistoryEntry(users, historyEntity)));
 
     return historyEntries;
