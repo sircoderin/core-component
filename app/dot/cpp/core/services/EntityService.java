@@ -240,15 +240,14 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
     final var historyEntries = new ArrayList<HistoryEntry>();
     final var historyStates = listHistory(currentState.getTrackingId());
 
-    final var modifiedByUserIdSet =
-        historyStates.stream().map(BaseEntity::getModifiedBy).collect(Collectors.toSet());
-    modifiedByUserIdSet.add(currentState.getModifiedBy());
+    final var userIdSet =
+        historyStates.stream()
+            .map(entity -> new ObjectId(entity.getModifiedBy()))
+            .collect(Collectors.toSet());
+    userIdSet.add(new ObjectId(currentState.getModifiedBy()));
 
-    final var userFilter =
-        Filters.in(
-            "_id", modifiedByUserIdSet.stream().map(ObjectId::new).collect(Collectors.toList()));
     final var users =
-        userRepository.listWithFilter(userFilter).stream()
+        userRepository.listWithFilter(Filters.in("_id", userIdSet)).stream()
             .collect(Collectors.toMap(User::getStrId, User::getUserName));
 
     historyEntries.add(getHistoryEntry(users, currentState));
