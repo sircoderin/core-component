@@ -7,23 +7,36 @@ import dot.cpp.core.builders.FilterBuilder;
 import dot.cpp.core.exceptions.EntityNotFoundException;
 import dot.cpp.core.helpers.ValidationHelper;
 import dot.cpp.core.models.BaseRequest;
+import dot.cpp.core.models.HistoryEntry;
+import dot.cpp.core.models.user.entity.User;
+import dot.cpp.core.models.user.repository.UserRepository;
 import dot.cpp.repository.models.BaseEntity;
 import dot.cpp.repository.repository.BaseRepository;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import javax.inject.Inject;
 import org.bson.types.ObjectId;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 
 public abstract class EntityService<T extends BaseEntity, S extends BaseRequest> {
 
+  private static final String INVALID = "invalid";
   private final Logger logger = LoggerFactory.getLogger(getClass());
+  private final SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm dd-MM-yyyy");
 
   private final BaseRepository<T> repository;
   private final int pageSize;
+
+  @Inject private UserRepository userRepository;
 
   protected EntityService(BaseRepository<T> repository, Config config) {
     this.repository = repository;
@@ -198,6 +211,54 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
 
   public T findByIdOrGetNewEntity(String id) throws EntityNotFoundException {
     return ValidationHelper.isNotEmpty(id) ? findById(id) : getNewEntity();
+  }
+
+  public List<HistoryEntry> getHistoryEntriesById(String id) throws EntityNotFoundException {
+    final var entity = findById(id);
+    return getHistoryEntries(entity);
+  }
+
+  public List<HistoryEntry> getHistoryEntriesByTrackingId(String trackingId)
+      throws EntityNotFoundException {
+    final var entity = findByField("trackingId", trackingId);
+    return getHistoryEntries(entity);
+  }
+
+  @NotNull
+  private List<HistoryEntry> getHistoryEntries(BaseEntity currentState) {
+    final var historyEntries = new ArrayList<HistoryEntry>();
+    final var historyStates = listHistory(currentState.getTrackingId());
+
+    final var modifiedByUserIdSet =
+        historyStates.stream().map(BaseEntity::getModifiedBy).collect(Collectors.toSet());
+    modifiedByUserIdSet.add(currentState.getModifiedBy());
+
+    final var users =
+        userRepository
+            .listWithFilter(
+                FilterBuilder.newInstance()
+                    .orEq(
+                        "_id",
+                        new ArrayList<>(modifiedByUserIdSet)
+                            .stream().map(ObjectId::new).collect(Collectors.toList()))
+                    .build())
+            .stream()
+            .collect(Collectors.toMap(User::getStrId, User::getUserName));
+
+    historyEntries.add(getHistoryEntry(users, currentState));
+    historyStates.forEach(
+        historyEntity -> historyEntries.add(getHistoryEntry(users, historyEntity)));
+
+    return historyEntries;
+  }
+
+  @NotNull
+  private HistoryEntry getHistoryEntry(Map<String, String> users, BaseEntity entityState) {
+    return new HistoryEntry(
+        users.getOrDefault(entityState.getModifiedBy(), INVALID),
+        dateFormat.format(new Date(entityState.getModifiedAt() * 1000L)),
+        entityState.getModifiedComment(),
+        entityState.getStrId());
   }
 
   public abstract T getNewEntity();

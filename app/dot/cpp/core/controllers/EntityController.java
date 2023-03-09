@@ -4,7 +4,6 @@ import com.typesafe.config.ConfigFactory;
 import dot.cpp.core.constants.Constants;
 import dot.cpp.core.exceptions.FormException;
 import dot.cpp.core.models.BaseRequest;
-import dot.cpp.core.services.HistoryService;
 import dot.cpp.core.services.RequestErrorService;
 import javax.inject.Inject;
 import org.slf4j.Logger;
@@ -22,7 +21,6 @@ public class EntityController extends Controller {
   @Inject protected FormFactory formFactory;
   @Inject protected MessagesApi messagesApi;
   @Inject protected RequestErrorService requestErrorService;
-  @Inject protected HistoryService historyService;
 
   public play.mvc.Result getSuccessfulRedirect(Call call) {
     return redirect(call)
