@@ -53,6 +53,18 @@ public final class RequestErrorService {
   }
 
   /**
+   * Handle form errors.
+   *
+   * @param call Call
+   * @param request Request
+   * @param errors List of ValidationError
+   */
+  public Result handleFormErrors(Call call, Http.Request request, List<ValidationError> errors) {
+    var messages = messagesApi.preferred(request);
+    return getResult(call, getErrorMessage(errors, messages));
+  }
+
+  /**
    * Handle form errors staying on the same page.
    *
    * @param request Request
@@ -61,6 +73,17 @@ public final class RequestErrorService {
   public Result handleFormErrorWithRefresh(Http.Request request, Form<?> webForm) {
     var messages = messagesApi.preferred(request);
     return redirect(request.uri()).flashing(DANGER, getErrorMessage(webForm.errors(), messages));
+  }
+
+  /**
+   * Handle form errors staying on the same page.
+   *
+   * @param request Request
+   * @param errors List of ValidationError
+   */
+  public Result handleFormErrorWithRefresh(Http.Request request, List<ValidationError> errors) {
+    var messages = messagesApi.preferred(request);
+    return redirect(request.uri()).flashing(DANGER, getErrorMessage(errors, messages));
   }
 
   public Result handleErrorFromException(Http.Request request, Call call, Exception e) {
