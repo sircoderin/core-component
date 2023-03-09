@@ -3,7 +3,7 @@ package dot.cpp.core.services;
 import com.typesafe.config.Config;
 import dev.morphia.query.Sort;
 import dev.morphia.query.filters.Filter;
-import dot.cpp.core.builders.FilterBuilder;
+import dev.morphia.query.filters.Filters;
 import dot.cpp.core.exceptions.EntityNotFoundException;
 import dot.cpp.core.helpers.ValidationHelper;
 import dot.cpp.core.models.BaseRequest;
@@ -43,8 +43,12 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
     this.pageSize = config.getInt("list.page.size");
   }
 
+  private static boolean isInvalidId(String id) {
+    return ValidationHelper.isEmpty(id) || !ObjectId.isValid(id);
+  }
+
   public T findById(String id) throws EntityNotFoundException {
-    if (ValidationHelper.isEmpty(id)) {
+    if (isInvalidId(id)) {
       throw new EntityNotFoundException();
     }
 
@@ -57,7 +61,7 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
   }
 
   public T findByHistoryId(String id) throws EntityNotFoundException {
-    if (ValidationHelper.isEmpty(id)) {
+    if (isInvalidId(id)) {
       throw new EntityNotFoundException();
     }
 
@@ -90,8 +94,7 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
   }
 
   public List<T> listByFieldWithPossibleValues(String field, List<?> values, Sort... sortBy) {
-    return repository.listWithFilter(
-        FilterBuilder.newInstance().orEq(field, values).build(), sortBy);
+    return repository.listWithFilter(Filters.in(field, values), sortBy);
   }
 
   public List<T> listAll(Sort... sortBy) {
@@ -210,16 +213,24 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
   }
 
   public T findByIdOrGetNewEntity(String id) throws EntityNotFoundException {
-    return ValidationHelper.isNotEmpty(id) ? findById(id) : getNewEntity();
+    return ValidationHelper.isEmpty(id) ? getNewEntity() : findById(id);
   }
 
   public List<HistoryEntry> getHistoryEntriesById(String id) throws EntityNotFoundException {
+    if (ValidationHelper.isEmpty(id)) {
+      return List.of();
+    }
+
     final var entity = findById(id);
     return getHistoryEntries(entity);
   }
 
   public List<HistoryEntry> getHistoryEntriesByTrackingId(String trackingId)
       throws EntityNotFoundException {
+    if (ValidationHelper.isEmpty(trackingId)) {
+      return List.of();
+    }
+
     final var entity = findByField("trackingId", trackingId);
     return getHistoryEntries(entity);
   }
@@ -233,16 +244,11 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
         historyStates.stream().map(BaseEntity::getModifiedBy).collect(Collectors.toSet());
     modifiedByUserIdSet.add(currentState.getModifiedBy());
 
+    final var userFilter =
+        Filters.in(
+            "_id", modifiedByUserIdSet.stream().map(ObjectId::new).collect(Collectors.toList()));
     final var users =
-        userRepository
-            .listWithFilter(
-                FilterBuilder.newInstance()
-                    .orEq(
-                        "_id",
-                        new ArrayList<>(modifiedByUserIdSet)
-                            .stream().map(ObjectId::new).collect(Collectors.toList()))
-                    .build())
-            .stream()
+        userRepository.listWithFilter(userFilter).stream()
             .collect(Collectors.toMap(User::getStrId, User::getUserName));
 
     historyEntries.add(getHistoryEntry(users, currentState));

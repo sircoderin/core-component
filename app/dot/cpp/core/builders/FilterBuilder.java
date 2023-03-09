@@ -49,20 +49,12 @@ public class FilterBuilder {
     return or(getFiltersListFromArray(filters));
   }
 
-  public FilterBuilder orEq(String fieldName, List<?> values) {
-    return or(eq(fieldName, values));
-  }
-
   public FilterBuilder nor(List<Filter> filters) {
     return operation(filters, Filters::nor);
   }
 
   public FilterBuilder nor(Filter... filters) {
     return nor(getFiltersListFromArray(filters));
-  }
-
-  public FilterBuilder norEq(String fieldName, List<?> values) {
-    return nor(eq(fieldName, values));
   }
 
   public FilterBuilder operation(List<Filter> filters, Function<Filter[], Filter> function) {
