@@ -2,6 +2,7 @@ package dot.cpp.core.services;
 
 import static play.mvc.Results.redirect;
 
+import dot.cpp.core.exceptions.FormException;
 import java.util.List;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
@@ -53,18 +54,6 @@ public final class RequestErrorService {
   }
 
   /**
-   * Handle form errors.
-   *
-   * @param call Call
-   * @param request Request
-   * @param errors List of ValidationError
-   */
-  public Result handleFormErrors(Call call, Http.Request request, List<ValidationError> errors) {
-    var messages = messagesApi.preferred(request);
-    return getResult(call, getErrorMessage(errors, messages));
-  }
-
-  /**
    * Handle form errors staying on the same page.
    *
    * @param request Request
@@ -75,20 +64,18 @@ public final class RequestErrorService {
     return redirect(request.uri()).flashing(DANGER, getErrorMessage(webForm.errors(), messages));
   }
 
-  /**
-   * Handle form errors staying on the same page.
-   *
-   * @param request Request
-   * @param errors List of ValidationError
-   */
-  public Result handleFormErrorWithRefresh(Http.Request request, List<ValidationError> errors) {
-    var messages = messagesApi.preferred(request);
-    return redirect(request.uri()).flashing(DANGER, getErrorMessage(errors, messages));
-  }
+  public Result handleExceptionErrors(Http.Request request, Call call, Exception e) {
+    final String errorMessage;
 
-  public Result handleErrorFromException(Http.Request request, Call call, Exception e) {
-    logger.error("", e);
-    return redirect(call).flashing(DANGER, messagesApi.preferred(request).apply(e.getMessage()));
+    if (e instanceof FormException) {
+      errorMessage =
+          getErrorMessage(((FormException) e).getFormErrors(), messagesApi.preferred(request));
+    } else {
+      logger.error("", e);
+      errorMessage = messagesApi.preferred(request).apply(e.getMessage());
+    }
+
+    return redirect(call).flashing(DANGER, errorMessage);
   }
 
   private String getErrorMessage(List<ValidationError> validationErrors, Messages messages) {

@@ -4,6 +4,7 @@ import com.typesafe.config.Config;
 import dev.morphia.query.Sort;
 import dev.morphia.query.filters.Filter;
 import dev.morphia.query.filters.Filters;
+import dot.cpp.core.exceptions.BaseException;
 import dot.cpp.core.exceptions.EntityNotFoundException;
 import dot.cpp.core.helpers.ValidationHelper;
 import dot.cpp.core.models.BaseRequest;
@@ -17,8 +18,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 import org.bson.types.ObjectId;
@@ -176,20 +175,12 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
     repository.save(entity);
   }
 
-  // sending an entityId and an entity at the same time is redundant
-  // use findByIdOrGetNewEntity where needed and replace this behaviour
-  public void save(String entityId, T entity, S request, Consumer<T>... consumers) {
-
-    BeanUtils.copyProperties(request, entity);
-    for (Consumer<T> consumer : consumers) {
-      consumer.accept(entity);
-    }
-
-    if (ValidationHelper.isNotEmpty(entityId)) {
-      entity.setId(new ObjectId(entityId));
-    }
+  public void save(String id, S request) throws BaseException {
+    final var entity = findByIdOrGetNewEntity(id);
+    setEntityFromRequest(entity, request);
 
     saveWithHistory(entity, request.getUserId());
+    processAfterSave(entity);
   }
 
   public void saveWithHistory(T entity) {
@@ -205,17 +196,14 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
     repository.delete(entity);
   }
 
-  public S getRequest(String id, BiConsumer<S, T>... consumers) throws EntityNotFoundException {
+  public S getRequest(String id) throws BaseException {
     final var request = getNewRequest();
     if (ValidationHelper.isEmpty(id)) {
       return request;
     }
 
-    final var dbEntity = findById(id);
-    BeanUtils.copyProperties(dbEntity, request);
-    for (BiConsumer<S, T> consumer : consumers) {
-      consumer.accept(request, dbEntity);
-    }
+    final var entity = findById(id);
+    setRequestFromEntity(request, entity);
 
     return request;
   }
@@ -273,6 +261,16 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
         entityState.getModifiedComment(),
         entityState.getStrId());
   }
+
+  public void setEntityFromRequest(T entity, S request) throws BaseException {
+    BeanUtils.copyProperties(request, entity);
+  }
+
+  public void setRequestFromEntity(S request, T entity) throws BaseException {
+    BeanUtils.copyProperties(entity, request);
+  }
+
+  protected void processAfterSave(T entity) throws BaseException {}
 
   public abstract T getNewEntity();
 
