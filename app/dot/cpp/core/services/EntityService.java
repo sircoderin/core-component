@@ -42,6 +42,10 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
     this.pageSize = config.getInt("list.page.size");
   }
 
+  protected BaseRepository<T> getRepository() {
+    return repository;
+  }
+
   private static boolean isInvalidId(String id) {
     return ValidationHelper.isEmpty(id) || !ObjectId.isValid(id);
   }
