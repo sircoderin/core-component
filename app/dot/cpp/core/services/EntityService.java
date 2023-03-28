@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
-import org.bson.types.ObjectId;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -94,8 +93,7 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
   }
 
   public List<T> listByIds(List<String> ids, Sort... sortBy) {
-    return listByFieldWithPossibleValues(
-        RECORD_ID_FIELD, ids.stream().map(ObjectId::new).collect(Collectors.toList()), sortBy);
+    return listByFieldWithPossibleValues(RECORD_ID_FIELD, ids, sortBy);
   }
 
   public List<T> listByField(String field, String value, Sort... sortBy) {
