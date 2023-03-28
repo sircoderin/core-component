@@ -133,6 +133,11 @@ public class UserService extends EntityService<User, InviteUserRequest> {
   }
 
   @Override
+  protected UserRepository getRepository() {
+    return (UserRepository) super.getRepository();
+  }
+
+  @Override
   public User getNewEntity() {
     return new User();
   }

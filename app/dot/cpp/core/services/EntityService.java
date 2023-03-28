@@ -44,6 +44,10 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
     this.pageSize = config.getInt("list.page.size");
   }
 
+  protected BaseRepository<T> getRepository() {
+    return repository;
+  }
+
   public T findById(String id) throws EntityNotFoundException {
     if (isEmpty(id)) {
       throw new EntityNotFoundException();
