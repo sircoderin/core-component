@@ -55,7 +55,7 @@ public class LoginService {
         throw new LoginException(Error.INCORRECT_PASSWORD);
       }
 
-      logger.debug("{}", user.getId());
+      logger.debug("{}", user.getRecordId());
 
       Date expirationDateRefresh = new Date();
       expirationDateRefresh.setTime(expirationDateRefresh.getTime() + 86400000L); // one day
@@ -65,12 +65,12 @@ public class LoginService {
       session.setRefreshToken(refreshToken);
       session.setRefreshExpiryDate(expirationDateRefresh.getTime());
       session.setCreateTime(Instant.now().toEpochMilli());
-      session.setUserId(user.getId().toString());
+      session.setUserId(user.getRecordId());
       sessionRepository.save(session);
 
       logger.debug("{}", session);
 
-      final String accessToken = getAccessToken(user.getId().toString());
+      final String accessToken = getAccessToken(user.getRecordId());
 
       final JsonObject tokens = new JsonObject();
       tokens.addProperty(Constants.ACCESS_TOKEN, accessToken);
@@ -83,7 +83,7 @@ public class LoginService {
   }
 
   private String getAccessToken(String userId) {
-    Date expirationDateAccess = new Date();
+    final var expirationDateAccess = new Date();
     expirationDateAccess.setTime(expirationDateAccess.getTime() + 1200000L); // 20 minutes
 
     String jws =

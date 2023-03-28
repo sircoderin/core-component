@@ -36,7 +36,7 @@ public final class FilterHelper {
       String idFieldName) {
     return entityService.listWithFilter(Filters.regex(searchFieldName).pattern(searchValue))
         .stream()
-        .map(entity -> Filters.eq(idFieldName, entity.getId().toString()))
+        .map(entity -> Filters.eq(idFieldName, entity.getRecordId()))
         .collect(Collectors.toList());
   }
 
