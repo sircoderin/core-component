@@ -1,12 +1,14 @@
 package dot.cpp.core.services;
 
+import static dot.cpp.core.helpers.ValidationHelper.isEmpty;
+import static dot.cpp.repository.models.BaseEntity.RECORD_ID_FIELD;
+
 import com.typesafe.config.Config;
 import dev.morphia.query.Sort;
 import dev.morphia.query.filters.Filter;
 import dev.morphia.query.filters.Filters;
 import dot.cpp.core.exceptions.BaseException;
 import dot.cpp.core.exceptions.EntityNotFoundException;
-import dot.cpp.core.helpers.ValidationHelper;
 import dot.cpp.core.models.BaseRequest;
 import dot.cpp.core.models.HistoryEntry;
 import dot.cpp.core.models.user.entity.User;
@@ -20,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
-import org.bson.types.ObjectId;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,12 +47,8 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
     return repository;
   }
 
-  private static boolean isInvalidId(String id) {
-    return ValidationHelper.isEmpty(id) || !ObjectId.isValid(id);
-  }
-
   public T findById(String id) throws EntityNotFoundException {
-    if (isInvalidId(id)) {
+    if (isEmpty(id)) {
       throw new EntityNotFoundException();
     }
 
@@ -64,7 +61,7 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
   }
 
   public T findByHistoryId(String id) throws EntityNotFoundException {
-    if (isInvalidId(id)) {
+    if (isEmpty(id)) {
       throw new EntityNotFoundException();
     }
 
@@ -77,7 +74,7 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
   }
 
   public T findByField(String field, String value) throws EntityNotFoundException {
-    if (ValidationHelper.isEmpty(field) || ValidationHelper.isEmpty(value)) {
+    if (isEmpty(field) || isEmpty(value)) {
       throw new EntityNotFoundException();
     }
     final var entity = repository.findByField(field, value);
@@ -96,8 +93,7 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
   }
 
   public List<T> listByIds(List<String> ids, Sort... sortBy) {
-    return listByFieldWithPossibleValues(
-        "_id", ids.stream().map(ObjectId::new).collect(Collectors.toList()), sortBy);
+    return listByFieldWithPossibleValues(RECORD_ID_FIELD, ids, sortBy);
   }
 
   public List<T> listByField(String field, String value, Sort... sortBy) {
@@ -126,8 +122,8 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
         : repository.listWithFilterPaginated(filter, pageSize, pageNum - 1, sortBy);
   }
 
-  public List<T> listHistory(String trackingId) {
-    return repository.listHistory(trackingId);
+  public List<T> listHistory(String recordId) {
+    return repository.listHistory(recordId);
   }
 
   public <U> List<U> getEntitiesByPage(List<U> entities, int pageNum) {
@@ -202,7 +198,7 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
 
   public S getRequest(String id) throws BaseException {
     final var request = getNewRequest();
-    if (ValidationHelper.isEmpty(id)) {
+    if (isEmpty(id)) {
       return request;
     }
 
@@ -213,11 +209,11 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
   }
 
   public T findByIdOrGetNewEntity(String id) throws EntityNotFoundException {
-    return ValidationHelper.isEmpty(id) ? getNewEntity() : findById(id);
+    return isEmpty(id) ? getNewEntity() : findById(id);
   }
 
   public List<HistoryEntry> getHistoryEntriesById(String id) throws EntityNotFoundException {
-    if (ValidationHelper.isEmpty(id)) {
+    if (isEmpty(id)) {
       return List.of();
     }
 
@@ -225,30 +221,28 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
     return getHistoryEntries(entity);
   }
 
-  public List<HistoryEntry> getHistoryEntriesByTrackingId(String trackingId)
+  public List<HistoryEntry> getHistoryEntriesByRecordId(String recordId)
       throws EntityNotFoundException {
-    if (ValidationHelper.isEmpty(trackingId)) {
+    if (isEmpty(recordId)) {
       return List.of();
     }
 
-    final var entity = findByField("trackingId", trackingId);
+    final var entity = findByField(RECORD_ID_FIELD, recordId);
     return getHistoryEntries(entity);
   }
 
   @NotNull
   private List<HistoryEntry> getHistoryEntries(BaseEntity currentState) {
     final var historyEntries = new ArrayList<HistoryEntry>();
-    final var historyStates = listHistory(currentState.getTrackingId());
+    final var historyStates = listHistory(currentState.getRecordId());
 
     final var userIdSet =
-        historyStates.stream()
-            .map(entity -> new ObjectId(entity.getModifiedBy()))
-            .collect(Collectors.toSet());
-    userIdSet.add(new ObjectId(currentState.getModifiedBy()));
+        historyStates.stream().map(BaseEntity::getModifiedBy).collect(Collectors.toSet());
+    userIdSet.add(currentState.getModifiedBy());
 
     final var users =
-        userRepository.listWithFilter(Filters.in("_id", userIdSet)).stream()
-            .collect(Collectors.toMap(User::getStrId, User::getUserName));
+        userRepository.listWithFilter(Filters.in(RECORD_ID_FIELD, userIdSet)).stream()
+            .collect(Collectors.toMap(User::getRecordId, User::getUserName));
 
     historyEntries.add(getHistoryEntry(users, currentState));
     historyStates.forEach(
@@ -263,7 +257,7 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
         users.getOrDefault(entityState.getModifiedBy(), INVALID),
         dateFormat.format(new Date(entityState.getModifiedAt() * 1000L)),
         entityState.getModifiedComment(),
-        entityState.getStrId());
+        entityState.getRecordId());
   }
 
   public void setEntityFromRequest(T entity, S request) throws BaseException {
