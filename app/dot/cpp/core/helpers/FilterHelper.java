@@ -1,5 +1,6 @@
 package dot.cpp.core.helpers;
 
+import dev.morphia.aggregation.stages.Match;
 import dev.morphia.query.filters.Filter;
 import dev.morphia.query.filters.Filters;
 import dot.cpp.core.models.BaseRequest;
@@ -19,6 +20,8 @@ public final class FilterHelper {
   public static final String VALUE = "value";
   public static final String NAME = "name";
   public static final String DRAW = "draw";
+  public static final String START = "start";
+  public static final String LENGTH = "length";
 
   private FilterHelper() {}
 
@@ -42,5 +45,9 @@ public final class FilterHelper {
 
   public static Filter contains(String fieldName, String value) {
     return Filters.regex(fieldName).pattern("(?i).*" + value + ".*");
+  }
+
+  public static Match getMatch(Filter filter) {
+    return filter != null ? Match.match(filter) : Match.match();
   }
 }
