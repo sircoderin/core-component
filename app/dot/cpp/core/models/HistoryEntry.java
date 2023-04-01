@@ -2,18 +2,15 @@ package dot.cpp.core.models;
 
 public class HistoryEntry {
 
-  public final String userName;
+  public final String username;
 
-  public final String dateTime;
+  public final Long timestamp;
 
   public final String comment;
 
-  public final String id;
-
-  public HistoryEntry(String userName, String dateTime, String comment, String id) {
-    this.userName = userName;
-    this.dateTime = dateTime;
+  public HistoryEntry(String username, Long timestamp, String comment) {
+    this.username = username;
+    this.timestamp = timestamp;
     this.comment = comment;
-    this.id = id;
   }
 }

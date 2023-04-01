@@ -60,12 +60,12 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
     return entity;
   }
 
-  public T findByHistoryId(String id) throws EntityNotFoundException {
+  public T findHistoryRecord(String id, Long timestamp) throws EntityNotFoundException {
     if (isEmpty(id)) {
       throw new EntityNotFoundException();
     }
 
-    final var entity = repository.findByHistoryId(id);
+    final var entity = repository.findHistoryRecord(id, timestamp);
     if (entity == null) {
       throw new EntityNotFoundException();
     }
@@ -122,8 +122,8 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
         : repository.listWithFilterPaginated(filter, pageSize, pageNum - 1, sortBy);
   }
 
-  public List<T> listHistory(String recordId) {
-    return repository.listHistory(recordId);
+  public List<T> listHistoryRecords(String id) {
+    return repository.listHistoryRecords(id);
   }
 
   public <U> List<U> getEntitiesByPage(List<U> entities, int pageNum) {
@@ -197,12 +197,17 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
   }
 
   public S getRequest(String id) throws BaseException {
+    return getRequest(id, null);
+  }
+
+  public S getRequest(String id, Long timestamp) throws BaseException {
     final var request = getNewRequest();
     if (isEmpty(id)) {
       return request;
     }
 
-    final var entity = findById(id);
+    final var entity =
+        (timestamp != null && timestamp > 0L) ? findHistoryRecord(id, timestamp) : findById(id);
     setRequestFromEntity(request, entity);
 
     return request;
@@ -212,29 +217,13 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
     return isEmpty(id) ? getNewEntity() : findById(id);
   }
 
-  public List<HistoryEntry> getHistoryEntriesById(String id) throws EntityNotFoundException {
+  public List<HistoryEntry> getHistoryEntries(String id) throws EntityNotFoundException {
     if (isEmpty(id)) {
       return List.of();
     }
 
-    final var entity = findById(id);
-    return getHistoryEntries(entity);
-  }
-
-  public List<HistoryEntry> getHistoryEntriesByRecordId(String recordId)
-      throws EntityNotFoundException {
-    if (isEmpty(recordId)) {
-      return List.of();
-    }
-
-    final var entity = findByField(RECORD_ID_FIELD, recordId);
-    return getHistoryEntries(entity);
-  }
-
-  @NotNull
-  private List<HistoryEntry> getHistoryEntries(BaseEntity currentState) {
-    final var historyEntries = new ArrayList<HistoryEntry>();
-    final var historyStates = listHistory(currentState.getRecordId());
+    final var currentState = findById(id);
+    final var historyStates = listHistoryRecords(id);
 
     final var userIdSet =
         historyStates.stream().map(BaseEntity::getModifiedBy).collect(Collectors.toSet());
@@ -243,6 +232,8 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
     final var users =
         userRepository.listWithFilter(Filters.in(RECORD_ID_FIELD, userIdSet)).stream()
             .collect(Collectors.toMap(User::getRecordId, User::getUserName));
+
+    final var historyEntries = new ArrayList<HistoryEntry>();
 
     historyEntries.add(getHistoryEntry(users, currentState));
     historyStates.forEach(
@@ -255,9 +246,8 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
   private HistoryEntry getHistoryEntry(Map<String, String> users, BaseEntity entityState) {
     return new HistoryEntry(
         users.getOrDefault(entityState.getModifiedBy(), INVALID),
-        dateFormat.format(new Date(entityState.getModifiedAt() * 1000L)),
-        entityState.getModifiedComment(),
-        entityState.getRecordId());
+        entityState.getModifiedAt(),
+        entityState.getModifiedComment());
   }
 
   public void setEntityFromRequest(T entity, S request) throws BaseException {
