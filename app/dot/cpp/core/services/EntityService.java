@@ -15,9 +15,8 @@ import dot.cpp.core.models.user.entity.User;
 import dot.cpp.core.models.user.repository.UserRepository;
 import dot.cpp.repository.models.BaseEntity;
 import dot.cpp.repository.repository.BaseRepository;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -31,7 +30,6 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
 
   private static final String INVALID = "invalid";
   private final Logger logger = LoggerFactory.getLogger(getClass());
-  private final SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm dd-MM-yyyy");
 
   private final BaseRepository<T> repository;
   private final int pageSize;
@@ -92,7 +90,7 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
     return repository.list(filter, skip, length, sortBy);
   }
 
-  public List<T> listByIds(List<String> ids, Sort... sortBy) {
+  public List<T> listByIds(Collection<String> ids, Sort... sortBy) {
     return listByFieldWithPossibleValues(RECORD_ID_FIELD, ids, sortBy);
   }
 
@@ -100,7 +98,7 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
     return repository.listByField(field, value, sortBy);
   }
 
-  public List<T> listByFieldWithPossibleValues(String field, List<?> values, Sort... sortBy) {
+  public List<T> listByFieldWithPossibleValues(String field, Collection<?> values, Sort... sortBy) {
     return repository.listWithFilter(Filters.in(field, values), sortBy);
   }
 
