@@ -1,5 +1,6 @@
 package dot.cpp.core.services;
 
+import static dot.cpp.core.helpers.PaginationHelper.getPagesNumber;
 import static dot.cpp.core.helpers.ValidationHelper.isEmpty;
 import static dot.cpp.repository.models.BaseEntity.RECORD_ID_FIELD;
 
@@ -9,6 +10,7 @@ import dev.morphia.query.filters.Filter;
 import dev.morphia.query.filters.Filters;
 import dot.cpp.core.exceptions.BaseException;
 import dot.cpp.core.exceptions.EntityNotFoundException;
+import dot.cpp.core.helpers.PaginationHelper;
 import dot.cpp.core.models.BaseRequest;
 import dot.cpp.core.models.HistoryEntry;
 import dot.cpp.core.models.user.entity.User;
@@ -32,7 +34,7 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
   private final BaseRepository<T> repository;
-  private final int pageSize;
+  protected final int pageSize;
 
   @Inject private UserRepository userRepository;
 
@@ -153,20 +155,12 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
     return filter == null ? repository.sum(field) : repository.sum(field, filter);
   }
 
-  public int getNumberOfPages() {
-    final var numEntities = count();
-    return getNumberOfPages(numEntities);
+  public long getNumberOfPages() {
+    return getPagesNumber((int) count(), pageSize);
   }
 
-  public int getNumberOfPages(Filter filter) {
-    final var numEntities = count(filter);
-    return getNumberOfPages(numEntities);
-  }
-
-  public int getNumberOfPages(long numEntities) {
-    final var numberOfPages =
-        numEntities % pageSize == 0 ? numEntities / pageSize : numEntities / pageSize + 1;
-    return (int) numberOfPages;
+  public long getNumberOfPages(Filter filter) {
+    return getPagesNumber((int) count(filter), pageSize);
   }
 
   public void save(T entity) {
