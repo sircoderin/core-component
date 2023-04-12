@@ -155,11 +155,15 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
     return filter == null ? repository.sum(field) : repository.sum(field, filter);
   }
 
-  public long getNumberOfPages() {
+  public int getNumberOfPages() {
     return getPagesNumber((int) count(), pageSize);
   }
 
-  public long getNumberOfPages(Filter filter) {
+  public int getNumberOfPages(int size) {
+    return getPagesNumber(size, pageSize);
+  }
+
+  public int getNumberOfPages(Filter filter) {
     return getPagesNumber((int) count(filter), pageSize);
   }
 
