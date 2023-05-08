@@ -166,25 +166,27 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
     return getPagesNumber((int) count(filter), pageSize);
   }
 
-  public void save(T entity) {
-    repository.save(entity);
+  public T save(T entity) {
+    return repository.save(entity);
   }
 
-  public void save(String id, S request) throws BaseException {
+  public T save(String id, S request) throws BaseException {
     final var entity = findByIdOrGetNewEntity(id);
     setEntityFromRequest(entity, request);
 
     saveWithHistory(entity, request.getUserId());
     processAfterSave(entity);
+
+    return entity;
   }
 
-  public void saveWithHistory(T entity) {
-    repository.saveWithHistory(entity);
+  public T saveWithHistory(T entity) {
+    return repository.saveWithHistory(entity);
   }
 
-  public void saveWithHistory(T entity, String userId) {
+  public T saveWithHistory(T entity, String userId) {
     entity.setModifiedBy(userId);
-    repository.saveWithHistory(entity);
+    return repository.saveWithHistory(entity);
   }
 
   public void delete(T entity) {
