@@ -2,7 +2,7 @@ package dot.cpp.core.services;
 
 import static dot.cpp.core.helpers.PaginationHelper.getPagesNumber;
 import static dot.cpp.core.helpers.ValidationHelper.isEmpty;
-import static dot.cpp.repository.models.BaseEntity.RECORD_ID_FIELD;
+import static dot.cpp.repository.models.BaseEntity.RECORD_ID;
 
 import com.typesafe.config.Config;
 import dev.morphia.query.Sort;
@@ -10,7 +10,6 @@ import dev.morphia.query.filters.Filter;
 import dev.morphia.query.filters.Filters;
 import dot.cpp.core.exceptions.BaseException;
 import dot.cpp.core.exceptions.EntityNotFoundException;
-import dot.cpp.core.helpers.PaginationHelper;
 import dot.cpp.core.models.BaseRequest;
 import dot.cpp.core.models.HistoryEntry;
 import dot.cpp.core.models.user.entity.User;
@@ -93,7 +92,7 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
   }
 
   public List<T> listByIds(Collection<String> ids, Sort... sortBy) {
-    return listByFieldWithPossibleValues(RECORD_ID_FIELD, ids, sortBy);
+    return listByFieldWithPossibleValues(RECORD_ID, ids, sortBy);
   }
 
   public List<T> listByField(String field, String value, Sort... sortBy) {
@@ -226,7 +225,7 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
     userIdSet.add(currentState.getModifiedBy());
 
     final var users =
-        userRepository.listWithFilter(Filters.in(RECORD_ID_FIELD, userIdSet)).stream()
+        userRepository.listWithFilter(Filters.in(RECORD_ID, userIdSet)).stream()
             .collect(Collectors.toMap(User::getRecordId, User::getUserName));
 
     final var historyEntries = new ArrayList<HistoryEntry>();
