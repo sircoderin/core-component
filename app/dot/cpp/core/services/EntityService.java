@@ -130,12 +130,16 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
     return entities.subList((pageNum - 1) * pageSize, toIndex);
   }
 
-  public T getEntityWithMaxFieldValue(String field) {
-    return repository.getFirstSorted(Sort.descending(field));
+  public T findFirst(Filter filter) {
+    return repository.findFirst(filter);
   }
 
-  public T getEntityWithMinFieldValue(String field) {
-    return repository.getFirstSorted(Sort.ascending(field));
+  public T findFirst(Sort sort) {
+    return repository.findFirst(sort);
+  }
+
+  public T findFirst(Filter filter, Sort sort) {
+    return repository.findFirst(filter, sort);
   }
 
   public long count() {
