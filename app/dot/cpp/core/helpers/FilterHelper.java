@@ -42,6 +42,10 @@ public final class FilterHelper {
     return values.isEmpty() ? null : Filters.in(field, values);
   }
 
+  public static Filter elemMatch(String field, Filter filter) {
+    return filter == null ? null : Filters.elemMatch(field, filter);
+  }
+
   public static Match getMatch(Filter... filter) {
     return Match.match(Arrays.stream(filter).filter(Objects::nonNull).toArray(Filter[]::new));
   }
