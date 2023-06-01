@@ -112,16 +112,18 @@ public class UserService extends EntityService<User, InviteUserRequest> {
     return user;
   }
 
-  public User acceptInvitation(AcceptInviteRequest acceptInviteRequest, String resetPasswordUuid)
+  public User acceptInvitation(AcceptInviteRequest request, String resetPasswordUuid)
       throws EntityNotFoundException {
-    logger.debug("{}\n{}", acceptInviteRequest, resetPasswordUuid);
+    logger.debug("{}\n{}", request, resetPasswordUuid);
 
     final var user = findByField("resetPasswordUuid", resetPasswordUuid);
 
-    final Hash hashedPassword = getHashedPassword(acceptInviteRequest.getPassword());
+    final var hashedPassword = getHashedPassword(request.getPassword());
 
     user.setPassword(hashedPassword.getResult());
-    user.setUserName(acceptInviteRequest.getUsername());
+    user.setUserName(request.getUsername());
+    user.setFullName(request.getFullName());
+    user.setDocumentId(request.getDocumentId());
     user.setResetPasswordUuid("");
     user.setStatus(UserStatus.ACTIVE);
 
