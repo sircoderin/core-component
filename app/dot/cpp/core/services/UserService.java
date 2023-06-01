@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 @Singleton
 public class UserService extends EntityService<User, InviteUserRequest> {
 
+  private static final String TEMPORARY = "temporary";
   private final Logger logger = LoggerFactory.getLogger(getClass());
   private final String passwordPepper;
   private final Argon2Function argon2 = Argon2Function.getInstance(1000, 4, 2, 32, Argon2.ID, 19);
@@ -36,17 +37,17 @@ public class UserService extends EntityService<User, InviteUserRequest> {
   }
 
   public String generateUserWithInvitation(String email, UserRole userRole) {
-    User user = new User();
-    final String resetPasswordUuid = UUID.randomUUID().toString();
+    final var user = new User();
+    final var resetPasswordUuid = UUID.randomUUID().toString();
 
     user.setEmail(email);
     user.setRole(userRole);
-    user.setUserName("temporary");
-    user.setPassword("temporary");
+    user.setUserName(TEMPORARY);
+    user.setPassword(TEMPORARY);
     user.setStatus(UserStatus.INACTIVE);
     user.setResetPasswordUuid(resetPasswordUuid);
-    user.setFullName("temporary");
-    user.setDocumentId("temporary");
+    user.setFullName(TEMPORARY);
+    user.setDocumentId(TEMPORARY);
 
     save(user);
 
