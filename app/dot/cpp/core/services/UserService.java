@@ -45,6 +45,8 @@ public class UserService extends EntityService<User, InviteUserRequest> {
     user.setPassword("temporary");
     user.setStatus(UserStatus.INACTIVE);
     user.setResetPasswordUuid(resetPasswordUuid);
+    user.setFullName("Mihai Popescu");
+    user.setDocumentId("AZ 123456");
 
     save(user);
 
