@@ -21,6 +21,18 @@ public class AcceptInviteRequest implements Validatable<String> {
   @Constraints.MinLength(value = 1, message = "constraints.field.invalid")
   private String confirmPassword;
 
+  @NotBlank private String fullName;
+
+  @NotBlank private String documentId;
+
+  public String getUsername() {
+    return username;
+  }
+
+  public void setUsername(String username) {
+    this.username = username;
+  }
+
   public String getPassword() {
     return password;
   }
@@ -37,6 +49,22 @@ public class AcceptInviteRequest implements Validatable<String> {
     this.confirmPassword = confirmPassword;
   }
 
+  public String getFullName() {
+    return fullName;
+  }
+
+  public void setFullName(String fullName) {
+    this.fullName = fullName;
+  }
+
+  public String getDocumentId() {
+    return documentId;
+  }
+
+  public void setDocumentId(String documentId) {
+    this.documentId = documentId;
+  }
+
   @Override
   public String validate() {
     if (!password.equals(confirmPassword)) {
@@ -47,14 +75,6 @@ public class AcceptInviteRequest implements Validatable<String> {
 
   @Override
   public String toString() {
-    return Json.stringify(Json.toJson(this));
-  }
-
-  public String getUsername() {
-    return username;
-  }
-
-  public void setUsername(String username) {
-    this.username = username;
+    return Json.toJson(this).toString();
   }
 }

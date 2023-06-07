@@ -17,6 +17,10 @@ public class User extends BaseEntity {
 
   @NotBlank private String password;
 
+  @NotBlank private String fullName;
+
+  @NotBlank private String documentId;
+
   @NotNull private UserRole role;
 
   private List<String> groups;
@@ -44,6 +48,22 @@ public class User extends BaseEntity {
 
   public void setPassword(String password) {
     this.password = password;
+  }
+
+  public String getFullName() {
+    return fullName;
+  }
+
+  public void setFullName(String fullName) {
+    this.fullName = fullName;
+  }
+
+  public String getDocumentId() {
+    return documentId;
+  }
+
+  public void setDocumentId(String documentId) {
+    this.documentId = documentId;
   }
 
   public UserRole getRole() {

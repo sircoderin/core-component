@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 @Singleton
 public class UserService extends EntityService<User, InviteUserRequest> {
 
+  private static final String TEMPORARY = "temporary";
   private final Logger logger = LoggerFactory.getLogger(getClass());
   private final String passwordPepper;
   private final Argon2Function argon2 = Argon2Function.getInstance(1000, 4, 2, 32, Argon2.ID, 19);
@@ -36,15 +37,17 @@ public class UserService extends EntityService<User, InviteUserRequest> {
   }
 
   public String generateUserWithInvitation(String email, UserRole userRole) {
-    User user = new User();
-    final String resetPasswordUuid = UUID.randomUUID().toString();
+    final var user = new User();
+    final var resetPasswordUuid = UUID.randomUUID().toString();
 
     user.setEmail(email);
     user.setRole(userRole);
-    user.setUserName("temporary");
-    user.setPassword("temporary");
+    user.setUserName(TEMPORARY);
+    user.setPassword(TEMPORARY);
     user.setStatus(UserStatus.INACTIVE);
     user.setResetPasswordUuid(resetPasswordUuid);
+    user.setFullName(TEMPORARY);
+    user.setDocumentId(TEMPORARY);
 
     save(user);
 
@@ -110,16 +113,18 @@ public class UserService extends EntityService<User, InviteUserRequest> {
     return user;
   }
 
-  public User acceptInvitation(AcceptInviteRequest acceptInviteRequest, String resetPasswordUuid)
+  public User acceptInvitation(AcceptInviteRequest request, String resetPasswordUuid)
       throws EntityNotFoundException {
-    logger.debug("{}\n{}", acceptInviteRequest, resetPasswordUuid);
+    logger.debug("{}\n{}", request, resetPasswordUuid);
 
     final var user = findByField("resetPasswordUuid", resetPasswordUuid);
 
-    final Hash hashedPassword = getHashedPassword(acceptInviteRequest.getPassword());
+    final var hashedPassword = getHashedPassword(request.getPassword());
 
     user.setPassword(hashedPassword.getResult());
-    user.setUserName(acceptInviteRequest.getUsername());
+    user.setUserName(request.getUsername());
+    user.setFullName(request.getFullName());
+    user.setDocumentId(request.getDocumentId());
     user.setResetPasswordUuid("");
     user.setStatus(UserStatus.ACTIVE);
 
