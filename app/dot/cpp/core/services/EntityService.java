@@ -207,13 +207,13 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
       return request;
     }
 
-    final var entity = getEntity(id, timestamp);
+    final var entity = findByIdAndTimestamp(id, timestamp);
     setRequestFromEntity(request, entity);
 
     return request;
   }
 
-  public T getEntity(String id, Long timestamp) throws EntityNotFoundException {
+  public T findByIdAndTimestamp(String id, Long timestamp) throws EntityNotFoundException {
     return (timestamp != null && timestamp > 0L) ? findHistoryRecord(id, timestamp) : findById(id);
   }
 
