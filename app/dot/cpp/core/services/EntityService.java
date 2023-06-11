@@ -174,6 +174,10 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
     return repository.save(entity);
   }
 
+  public List<T> save(List<T> entities) {
+    return repository.save(entities);
+  }
+
   public T save(String id, S request) throws BaseException {
     final var entity = findByIdOrGetNewEntity(id);
     setEntityFromRequest(entity, request);
