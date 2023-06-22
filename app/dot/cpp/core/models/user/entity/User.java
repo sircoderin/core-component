@@ -34,6 +34,10 @@ public class User extends BaseEntity {
   @Pattern(regexp = Patterns.UUID, message = "constraints.field.invalid")
   private String resetPasswordUuid;
 
+  public boolean isActive() {
+    return status == UserStatus.ACTIVE;
+  }
+
   public String getUserName() {
     return userName;
   }
@@ -82,6 +86,14 @@ public class User extends BaseEntity {
     this.groups = groups;
   }
 
+  public UserStatus getStatus() {
+    return status;
+  }
+
+  public void setStatus(UserStatus status) {
+    this.status = status;
+  }
+
   public String getEmail() {
     return email;
   }
@@ -96,17 +108,5 @@ public class User extends BaseEntity {
 
   public void setResetPasswordUuid(String resetPasswordUuid) {
     this.resetPasswordUuid = resetPasswordUuid;
-  }
-
-  public UserStatus getStatus() {
-    return status;
-  }
-
-  public boolean isActive() {
-    return getStatus() == UserStatus.ACTIVE;
-  }
-
-  public void setStatus(UserStatus status) {
-    this.status = status;
   }
 }

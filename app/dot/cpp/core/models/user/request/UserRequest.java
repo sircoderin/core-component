@@ -11,7 +11,7 @@ public class UserRequest extends BaseRequest {
   private UserRole role;
 
   @NotBlank(message = "constraints.field.mandatory")
-  private String username;
+  private String userName;
 
   @NotBlank(message = "constraints.field.mandatory")
   private String email;
@@ -30,12 +30,12 @@ public class UserRequest extends BaseRequest {
     this.role = role;
   }
 
-  public String getUsername() {
-    return username;
+  public String getUserName() {
+    return userName;
   }
 
-  public void setUsername(String username) {
-    this.username = username;
+  public void setUserName(String userName) {
+    this.userName = userName;
   }
 
   public String getEmail() {
