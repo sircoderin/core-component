@@ -69,10 +69,9 @@ public class UserService extends EntityService<User, UserRequest> {
 
   public User acceptInvitation(AcceptInviteRequest request, String resetPasswordUuid)
       throws BaseException {
-    logger.debug("{}\n{}", request, resetPasswordUuid);
+    logger.debug("accept invitation request {} with uuid {}", request, resetPasswordUuid);
 
     final var user = findByField(RESET_PASSWORD_UUID, resetPasswordUuid);
-
     final var hashedPassword = getHashedPassword(request.getPassword());
 
     user.setPassword(hashedPassword.getResult());
@@ -101,12 +100,12 @@ public class UserService extends EntityService<User, UserRequest> {
   }
 
   public String generateResetPasswordUuid(String email) throws BaseException {
-    final User user = findByField("email", email);
+    final var user = findByField("email", email);
     if (!user.isActive()) {
       throw new BaseException(ErrorCodes.USER_INACTIVE_ACCOUNT.getCode());
     }
 
-    final String resetPasswordUuid = UUID.randomUUID().toString();
+    final var resetPasswordUuid = UUID.randomUUID().toString();
     user.setResetPasswordUuid(resetPasswordUuid);
     user.setModifiedComment("Reset password");
     saveWithHistory(user, SYSTEM);
