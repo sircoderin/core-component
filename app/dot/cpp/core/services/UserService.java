@@ -1,5 +1,7 @@
 package dot.cpp.core.services;
 
+import static dot.cpp.core.helpers.ValidationHelper.isEmpty;
+
 import com.password4j.Argon2Function;
 import com.password4j.Hash;
 import com.password4j.Password;
@@ -12,7 +14,6 @@ import dot.cpp.core.exceptions.BaseException;
 import dot.cpp.core.models.user.entity.User;
 import dot.cpp.core.models.user.repository.UserRepository;
 import dot.cpp.core.models.user.request.AcceptInviteRequest;
-import dot.cpp.core.models.user.request.InviteUserRequest;
 import dot.cpp.core.models.user.request.ResetPasswordRequest;
 import dot.cpp.core.models.user.request.UserRequest;
 import java.util.List;
@@ -34,6 +35,14 @@ public class UserService extends EntityService<User, UserRequest> {
   public UserService(UserRepository userRepository, Config config) {
     super(userRepository, config);
     this.passwordPepper = config.getString("password.pepper");
+  }
+
+  @Override
+  public void setEntityFromRequest(User entity, UserRequest request) throws BaseException {
+    if (isEmpty(entity.getPassword())) {
+      entity.setPassword("temp123456789");
+    }
+    super.setEntityFromRequest(entity, request);
   }
 
   public User createUser(String email, UserRole userRole) {

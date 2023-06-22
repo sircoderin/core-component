@@ -25,7 +25,7 @@ public class User extends BaseEntity {
 
   private List<String> groups;
 
-  private UserStatus status;
+  private UserStatus status = UserStatus.ACTIVE;
 
   @NotNull
   @Pattern(regexp = Patterns.EMAIL, message = "constraints.field.invalid")
