@@ -15,6 +15,7 @@ import dot.cpp.core.models.user.entity.User;
 import dot.cpp.core.models.user.repository.UserRepository;
 import dot.cpp.core.models.user.request.AcceptInviteRequest;
 import dot.cpp.core.models.user.request.ResetPasswordRequest;
+import dot.cpp.core.models.user.request.SetPasswordRequest;
 import dot.cpp.core.models.user.request.UserRequest;
 import java.util.List;
 import java.util.UUID;
@@ -27,6 +28,7 @@ import org.slf4j.LoggerFactory;
 public class UserService extends EntityService<User, UserRequest> {
 
   private static final String TEMPORARY = "temporary";
+  private static final String RESET_PASSWORD_UUID = "resetPasswordUuid";
   private final Logger logger = LoggerFactory.getLogger(getClass());
   private final String passwordPepper;
   private final Argon2Function argon2 = Argon2Function.getInstance(1000, 4, 2, 32, Argon2.ID, 19);
@@ -80,7 +82,7 @@ public class UserService extends EntityService<User, UserRequest> {
     logger.debug("{}", resetPasswordRequest);
     logger.debug("{}", resetPasswordUuid);
 
-    final var user = findByField("resetPasswordUuid", resetPasswordUuid);
+    final var user = findByField(RESET_PASSWORD_UUID, resetPasswordUuid);
 
     final Hash hashedPassword = getHashedPassword(resetPasswordRequest.getPassword());
     logger.debug("{}", hashedPassword);
@@ -88,8 +90,7 @@ public class UserService extends EntityService<User, UserRequest> {
     user.setResetPasswordUuid("");
 
     logger.debug("{}", user);
-    save(user);
-    return user;
+    return save(user);
   }
 
   public boolean checkPassword(String hashedPassword, String password) {
@@ -118,7 +119,7 @@ public class UserService extends EntityService<User, UserRequest> {
       throws BaseException {
     logger.debug("{}\n{}", request, resetPasswordUuid);
 
-    final var user = findByField("resetPasswordUuid", resetPasswordUuid);
+    final var user = findByField(RESET_PASSWORD_UUID, resetPasswordUuid);
 
     final var hashedPassword = getHashedPassword(request.getPassword());
 
@@ -126,12 +127,22 @@ public class UserService extends EntityService<User, UserRequest> {
     user.setUserName(request.getUsername());
     user.setFullName(request.getFullName());
     user.setIdNumber(request.getDocumentId());
-    user.setResetPasswordUuid("");
+    user.setResetPasswordUuid(null);
     user.setStatus(UserStatus.ACTIVE);
 
     logger.debug("{}", user);
-    save(user);
-    return user;
+    return save(user);
+  }
+
+  public User setPassword(SetPasswordRequest request, String resetPasswordUuid)
+      throws BaseException {
+    logger.debug("set password request {} with uuid {}", request, resetPasswordUuid);
+    final var user = findByField(RESET_PASSWORD_UUID, resetPasswordUuid);
+    final var hashedPassword = getHashedPassword(request.getPassword());
+    user.setPassword(hashedPassword.getResult());
+    user.setResetPasswordUuid(null);
+
+    return save(user);
   }
 
   private Hash getHashedPassword(String password) {
