@@ -19,7 +19,7 @@ public class User extends BaseEntity {
 
   @NotBlank private String fullName;
 
-  @NotBlank private String documentId;
+  @NotBlank private String idNumber;
 
   @NotNull private UserRole role;
 
@@ -58,12 +58,12 @@ public class User extends BaseEntity {
     this.fullName = fullName;
   }
 
-  public String getDocumentId() {
-    return documentId;
+  public String getIdNumber() {
+    return idNumber;
   }
 
-  public void setDocumentId(String documentId) {
-    this.documentId = documentId;
+  public void setIdNumber(String idNumber) {
+    this.idNumber = idNumber;
   }
 
   public UserRole getRole() {

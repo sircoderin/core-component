@@ -2,20 +2,14 @@ package dot.cpp.core.exceptions;
 
 public class BaseException extends Exception {
 
-  public BaseException(String message) {
-    super(message);
+  private final ErrorCode errorCode;
+
+  public BaseException(ErrorCode errorCode) {
+    super(errorCode.getMessage());
+    this.errorCode = errorCode;
   }
 
-  public BaseException(String message, Throwable cause) {
-    super(message, cause);
-  }
-
-  public BaseException(Throwable cause) {
-    super(cause);
-  }
-
-  public BaseException(
-      String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
-    super(message, cause, enableSuppression, writableStackTrace);
+  public ErrorCode getErrorCode() {
+    return errorCode;
   }
 }

@@ -9,7 +9,6 @@ import dev.morphia.query.Sort;
 import dev.morphia.query.filters.Filter;
 import dev.morphia.query.filters.Filters;
 import dot.cpp.core.exceptions.BaseException;
-import dot.cpp.core.exceptions.EntityNotFoundException;
 import dot.cpp.core.models.BaseRequest;
 import dot.cpp.core.models.HistoryEntry;
 import dot.cpp.core.models.user.entity.User;
@@ -46,39 +45,39 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
     return repository;
   }
 
-  public T findById(String id) throws EntityNotFoundException {
+  public T findById(String id) throws BaseException {
     if (isEmpty(id)) {
-      throw new EntityNotFoundException();
+      throw notFoundException();
     }
 
     final var entity = repository.findById(id);
     if (entity == null) {
-      throw new EntityNotFoundException();
+      throw notFoundException();
     }
 
     return entity;
   }
 
-  public T findHistoryRecord(String id, Long timestamp) throws EntityNotFoundException {
+  public T findHistoryRecord(String id, Long timestamp) throws BaseException {
     if (isEmpty(id)) {
-      throw new EntityNotFoundException();
+      throw notFoundException();
     }
 
     final var entity = repository.findHistoryRecord(id, timestamp);
     if (entity == null) {
-      throw new EntityNotFoundException();
+      throw notFoundException();
     }
 
     return entity;
   }
 
-  public T findByField(String field, String value) throws EntityNotFoundException {
+  public T findByField(String field, String value) throws BaseException {
     if (isEmpty(field) || isEmpty(value)) {
-      throw new EntityNotFoundException();
+      throw notFoundException();
     }
     final var entity = repository.findByField(field, value);
     if (entity == null) {
-      throw new EntityNotFoundException();
+      throw notFoundException();
     }
     return entity;
   }
@@ -217,15 +216,15 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
     return request;
   }
 
-  public T findByIdAndTimestamp(String id, Long timestamp) throws EntityNotFoundException {
+  public T findByIdAndTimestamp(String id, Long timestamp) throws BaseException {
     return (timestamp != null && timestamp > 0L) ? findHistoryRecord(id, timestamp) : findById(id);
   }
 
-  public T findByIdOrGetNewEntity(String id) throws EntityNotFoundException {
+  public T findByIdOrGetNewEntity(String id) throws BaseException {
     return isEmpty(id) ? getNewEntity() : findById(id);
   }
 
-  public List<HistoryEntry> getHistoryEntries(String id) throws EntityNotFoundException {
+  public List<HistoryEntry> getHistoryEntries(String id) throws BaseException {
     if (isEmpty(id)) {
       return List.of();
     }
@@ -271,4 +270,6 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
   public abstract T getNewEntity();
 
   public abstract S getNewRequest();
+
+  protected abstract BaseException notFoundException();
 }

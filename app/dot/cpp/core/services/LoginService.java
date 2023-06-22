@@ -2,11 +2,9 @@ package dot.cpp.core.services;
 
 import com.google.gson.JsonObject;
 import dot.cpp.core.constants.Constants;
-import dot.cpp.core.enums.Error;
+import dot.cpp.core.enums.ErrorCodes;
 import dot.cpp.core.enums.UserRole;
-import dot.cpp.core.exceptions.EntityNotFoundException;
-import dot.cpp.core.exceptions.LoginException;
-import dot.cpp.core.exceptions.UserException;
+import dot.cpp.core.exceptions.BaseException;
 import dot.cpp.core.models.session.entity.Session;
 import dot.cpp.core.models.session.repository.SessionRepository;
 import dot.cpp.core.models.user.entity.User;
@@ -45,14 +43,14 @@ public class LoginService {
     key = Keys.secretKeyFor(SignatureAlgorithm.HS512);
   }
 
-  public JsonObject login(String userName, String password) throws LoginException {
+  public JsonObject login(String userName, String password) throws BaseException {
     var user = userRepository.findByField("userName", userName);
 
     if (user == null) {
-      throw new LoginException(Error.NOT_FOUND);
+      throw new BaseException(ErrorCodes.USER_NOT_FOUND.getCode());
     } else {
       if (!userService.checkPassword(user.getPassword(), password)) {
-        throw new LoginException(Error.INCORRECT_PASSWORD);
+        throw new BaseException(ErrorCodes.INCORRECT_PASSWORD.getCode());
       }
 
       logger.debug("{}", user.getRecordId());
@@ -98,40 +96,40 @@ public class LoginService {
     return jws;
   }
 
-  public String checkJwtAndGetUserId(String jwtToken) throws LoginException {
+  public String checkJwtAndGetUserId(String jwtToken) throws BaseException {
     logger.debug("{}", jwtToken);
 
     final var claims = getJwsClaims(jwtToken).getBody();
     final var expirationDate = claims.getExpiration();
 
     if (expirationDate.before(new Date())) {
-      throw new LoginException(Error.EXPIRED_ACCESS);
+      throw new BaseException(ErrorCodes.EXPIRED_ACCESS.getCode());
     }
 
     return claims.getSubject();
   }
 
-  private Jws<Claims> getJwsClaims(String jwtToken) throws LoginException {
+  private Jws<Claims> getJwsClaims(String jwtToken) throws BaseException {
     try {
       return Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(jwtToken);
     } catch (Exception e) {
       logger.info("JWT error {}", e.getMessage());
-      throw new LoginException(Error.INVALID_JWT);
+      throw new BaseException(ErrorCodes.INVALID_JWT.getCode());
     }
   }
 
   public User authorizeRequest(String accessToken, List<UserRole> permittedUserRoles)
-      throws LoginException, UserException, EntityNotFoundException {
+      throws BaseException {
     final String userId = checkJwtAndGetUserId(accessToken);
 
     return userService.userIsActiveAndHasRole(userId, permittedUserRoles);
   }
 
-  public JsonObject refreshTokens(String refreshToken) throws LoginException {
+  public JsonObject refreshTokens(String refreshToken) throws BaseException {
 
     final Session session = sessionRepository.findByField("refreshToken", refreshToken);
     if (session == null) {
-      throw new LoginException(Error.SESSION_NOT_FOUND);
+      throw new BaseException(ErrorCodes.SESSION_NOT_FOUND.getCode());
     }
 
     logger.debug("before refresh {}", session);
@@ -156,10 +154,10 @@ public class LoginService {
     return tokens;
   }
 
-  public void logout(String userId) throws UserException {
+  public void logout(String userId) throws BaseException {
     final var session = sessionRepository.findByField("userId", userId);
     if (session == null) {
-      throw new UserException(Error.SESSION_NOT_FOUND);
+      throw new BaseException(ErrorCodes.SESSION_NOT_FOUND.getCode());
     }
 
     sessionRepository.delete(session);

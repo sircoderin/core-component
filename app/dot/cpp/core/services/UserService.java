@@ -5,11 +5,10 @@ import com.password4j.Hash;
 import com.password4j.Password;
 import com.password4j.types.Argon2;
 import com.typesafe.config.Config;
-import dot.cpp.core.enums.Error;
+import dot.cpp.core.enums.ErrorCodes;
 import dot.cpp.core.enums.UserRole;
 import dot.cpp.core.enums.UserStatus;
-import dot.cpp.core.exceptions.EntityNotFoundException;
-import dot.cpp.core.exceptions.UserException;
+import dot.cpp.core.exceptions.BaseException;
 import dot.cpp.core.models.user.entity.User;
 import dot.cpp.core.models.user.repository.UserRepository;
 import dot.cpp.core.models.user.request.AcceptInviteRequest;
@@ -36,7 +35,7 @@ public class UserService extends EntityService<User, InviteUserRequest> {
     this.passwordPepper = config.getString("password.pepper");
   }
 
-  public String generateUserWithInvitation(String email, UserRole userRole) {
+  public User createUser(String email, UserRole userRole) {
     final var user = new User();
     final var resetPasswordUuid = UUID.randomUUID().toString();
 
@@ -47,34 +46,27 @@ public class UserService extends EntityService<User, InviteUserRequest> {
     user.setStatus(UserStatus.INACTIVE);
     user.setResetPasswordUuid(resetPasswordUuid);
     user.setFullName(TEMPORARY);
-    user.setDocumentId(TEMPORARY);
+    user.setIdNumber(TEMPORARY);
 
+    return save(user);
+  }
+
+  public String generateResetPasswordπUuid(String email) throws BaseException {
+    final User user = findByField("email", email);
+    if (!user.isActive()) {
+      throw new BaseException(ErrorCodes.USER_INACTIVE_ACCOUNT.getCode());
+    }
+
+    final String resetPasswordUuid = UUID.randomUUID().toString();
+    user.setResetPasswordUuid(resetPasswordUuid);
     save(user);
 
+    logger.debug("{}", user);
     return resetPasswordUuid;
   }
 
-  public String generateResetPasswordUuid(String email) throws UserException {
-
-    try {
-      final User user = findByField("email", email);
-      if (!user.isActive()) {
-        throw new UserException(Error.ACCOUNT_INACTIVE);
-      }
-
-      final String resetPasswordUuid = UUID.randomUUID().toString();
-      user.setResetPasswordUuid(resetPasswordUuid);
-      save(user);
-
-      logger.debug("{}", user);
-      return resetPasswordUuid;
-    } catch (EntityNotFoundException e) {
-      throw new UserException(Error.USER_EMAIL_NOT_FOUND);
-    }
-  }
-
   public User resetPassword(ResetPasswordRequest resetPasswordRequest, String resetPasswordUuid)
-      throws EntityNotFoundException {
+      throws BaseException {
     logger.debug("{}", resetPasswordRequest);
     logger.debug("{}", resetPasswordUuid);
 
@@ -97,24 +89,23 @@ public class UserService extends EntityService<User, InviteUserRequest> {
     return verified;
   }
 
-  public User userIsActiveAndHasRole(String userId, List<UserRole> userRoles)
-      throws UserException, EntityNotFoundException {
+  public User userIsActiveAndHasRole(String userId, List<UserRole> userRoles) throws BaseException {
 
     final var user = findById(userId);
     logger.debug("{}", user);
 
     if (!user.isActive()) {
-      throw new UserException(Error.ACCOUNT_INACTIVE);
+      throw new BaseException(ErrorCodes.USER_INACTIVE_ACCOUNT.getCode());
     }
     if (!userRoles.isEmpty() && !userRoles.contains(user.getRole())) {
-      throw new UserException(Error.USER_ROLE_MISMATCH);
+      throw new BaseException(ErrorCodes.USER_ROLE_MISMATCH.getCode());
     }
 
     return user;
   }
 
   public User acceptInvitation(AcceptInviteRequest request, String resetPasswordUuid)
-      throws EntityNotFoundException {
+      throws BaseException {
     logger.debug("{}\n{}", request, resetPasswordUuid);
 
     final var user = findByField("resetPasswordUuid", resetPasswordUuid);
@@ -124,7 +115,7 @@ public class UserService extends EntityService<User, InviteUserRequest> {
     user.setPassword(hashedPassword.getResult());
     user.setUserName(request.getUsername());
     user.setFullName(request.getFullName());
-    user.setDocumentId(request.getDocumentId());
+    user.setIdNumber(request.getDocumentId());
     user.setResetPasswordUuid("");
     user.setStatus(UserStatus.ACTIVE);
 
@@ -150,5 +141,10 @@ public class UserService extends EntityService<User, InviteUserRequest> {
   @Override
   public InviteUserRequest getNewRequest() {
     return new InviteUserRequest();
+  }
+
+  @Override
+  protected BaseException notFoundException() {
+    return new BaseException(ErrorCodes.USER_NOT_FOUND.getCode());
   }
 }

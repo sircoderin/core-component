@@ -7,9 +7,7 @@ import dot.cpp.core.annotations.Authentication;
 import dot.cpp.core.constants.Constants;
 import dot.cpp.core.constants.Patterns;
 import dot.cpp.core.enums.UserRole;
-import dot.cpp.core.exceptions.EntityNotFoundException;
-import dot.cpp.core.exceptions.LoginException;
-import dot.cpp.core.exceptions.UserException;
+import dot.cpp.core.exceptions.BaseException;
 import dot.cpp.core.helpers.CookieHelper;
 import dot.cpp.core.models.user.entity.User;
 import dot.cpp.core.services.LoginService;
@@ -59,7 +57,7 @@ public class AuthenticationAction extends Action<Authentication> {
     try {
       final var user = loginService.authorizeRequest(accessToken, getConfigUserRoles());
       return delegate.call(request.addAttr(Constants.USER, user));
-    } catch (LoginException loginEx) {
+    } catch (BaseException loginEx) {
       logger.debug("{}", loginEx.getMessage());
 
       try {
@@ -68,11 +66,9 @@ public class AuthenticationAction extends Action<Authentication> {
             loginService.authorizeRequest(
                 tokens.get(Constants.ACCESS_TOKEN).getAsString(), getConfigUserRoles());
         return getSuccessfulResult(request, user, tokens);
-      } catch (LoginException | UserException | EntityNotFoundException refreshException) {
-        return getCompletableFutureResultOnError(messages, refreshException);
+      } catch (BaseException exception) {
+        return getCompletableFutureResultOnError(messages, exception);
       }
-    } catch (UserException | EntityNotFoundException userEx) {
-      return getCompletableFutureResultOnError(messages, userEx);
     }
   }
 
