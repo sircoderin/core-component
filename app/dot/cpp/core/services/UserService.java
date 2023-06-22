@@ -51,7 +51,7 @@ public class UserService extends EntityService<User, InviteUserRequest> {
     return save(user);
   }
 
-  public String generateResetPasswordπUuid(String email) throws BaseException {
+  public String generateResetPasswordUuid(String email) throws BaseException {
     final User user = findByField("email", email);
     if (!user.isActive()) {
       throw new BaseException(ErrorCodes.USER_INACTIVE_ACCOUNT.getCode());
