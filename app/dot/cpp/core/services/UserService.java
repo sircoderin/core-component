@@ -14,7 +14,6 @@ import dot.cpp.core.exceptions.BaseException;
 import dot.cpp.core.models.user.entity.User;
 import dot.cpp.core.models.user.repository.UserRepository;
 import dot.cpp.core.models.user.request.AcceptInviteRequest;
-import dot.cpp.core.models.user.request.ResetPasswordRequest;
 import dot.cpp.core.models.user.request.SetPasswordRequest;
 import dot.cpp.core.models.user.request.UserRequest;
 import java.util.List;
@@ -29,6 +28,7 @@ public class UserService extends EntityService<User, UserRequest> {
 
   private static final String TEMPORARY = "temporary";
   private static final String RESET_PASSWORD_UUID = "resetPasswordUuid";
+  public static final String SYSTEM = "system";
   private final Logger logger = LoggerFactory.getLogger(getClass());
   private final String passwordPepper;
   private final Argon2Function argon2 = Argon2Function.getInstance(1000, 4, 2, 32, Argon2.ID, 19);
@@ -47,20 +47,57 @@ public class UserService extends EntityService<User, UserRequest> {
     super.setEntityFromRequest(entity, request);
   }
 
-  public User createUser(String email, UserRole userRole) {
-    final var user = new User();
-    final var resetPasswordUuid = UUID.randomUUID().toString();
+  @Override
+  public User getNewEntity() {
+    return new User();
+  }
 
-    user.setEmail(email);
-    user.setRole(userRole);
-    user.setUserName(TEMPORARY);
-    user.setPassword(TEMPORARY);
-    user.setStatus(UserStatus.INACTIVE);
-    user.setResetPasswordUuid(resetPasswordUuid);
-    user.setFullName(TEMPORARY);
-    user.setIdNumber(TEMPORARY);
+  @Override
+  public UserRequest getNewRequest() {
+    return new UserRequest();
+  }
 
-    return save(user);
+  @Override
+  protected BaseException notFoundException() {
+    return new BaseException(ErrorCodes.USER_NOT_FOUND.getCode());
+  }
+
+  @Override
+  protected UserRepository getRepository() {
+    return (UserRepository) super.getRepository();
+  }
+
+  public User acceptInvitation(AcceptInviteRequest request, String resetPasswordUuid)
+      throws BaseException {
+    logger.debug("{}\n{}", request, resetPasswordUuid);
+
+    final var user = findByField(RESET_PASSWORD_UUID, resetPasswordUuid);
+
+    final var hashedPassword = getHashedPassword(request.getPassword());
+
+    user.setPassword(hashedPassword.getResult());
+    user.setUserName(request.getUsername());
+    user.setFullName(request.getFullName());
+    user.setIdNumber(request.getDocumentId());
+    user.setResetPasswordUuid("");
+    user.setStatus(UserStatus.ACTIVE);
+
+    user.setModifiedComment("Accept invite");
+
+    logger.debug("{}", user);
+    return saveWithHistory(user, SYSTEM);
+  }
+
+  public User setPassword(SetPasswordRequest request, String resetPasswordUuid)
+      throws BaseException {
+    logger.debug("set password request {} with uuid {}", request, resetPasswordUuid);
+    final var user = findByField(RESET_PASSWORD_UUID, resetPasswordUuid);
+    final var hashedPassword = getHashedPassword(request.getPassword());
+    user.setPassword(hashedPassword.getResult());
+    user.setResetPasswordUuid("");
+    user.setModifiedComment("Set password");
+
+    return saveWithHistory(user, SYSTEM);
   }
 
   public String generateResetPasswordUuid(String email) throws BaseException {
@@ -71,26 +108,11 @@ public class UserService extends EntityService<User, UserRequest> {
 
     final String resetPasswordUuid = UUID.randomUUID().toString();
     user.setResetPasswordUuid(resetPasswordUuid);
-    save(user);
+    user.setModifiedComment("Reset password");
+    saveWithHistory(user, SYSTEM);
 
     logger.debug("{}", user);
     return resetPasswordUuid;
-  }
-
-  public User resetPassword(ResetPasswordRequest resetPasswordRequest, String resetPasswordUuid)
-      throws BaseException {
-    logger.debug("{}", resetPasswordRequest);
-    logger.debug("{}", resetPasswordUuid);
-
-    final var user = findByField(RESET_PASSWORD_UUID, resetPasswordUuid);
-
-    final Hash hashedPassword = getHashedPassword(resetPasswordRequest.getPassword());
-    logger.debug("{}", hashedPassword);
-    user.setPassword(hashedPassword.getResult());
-    user.setResetPasswordUuid("");
-
-    logger.debug("{}", user);
-    return save(user);
   }
 
   public boolean checkPassword(String hashedPassword, String password) {
@@ -115,57 +137,23 @@ public class UserService extends EntityService<User, UserRequest> {
     return user;
   }
 
-  public User acceptInvitation(AcceptInviteRequest request, String resetPasswordUuid)
-      throws BaseException {
-    logger.debug("{}\n{}", request, resetPasswordUuid);
-
-    final var user = findByField(RESET_PASSWORD_UUID, resetPasswordUuid);
-
-    final var hashedPassword = getHashedPassword(request.getPassword());
-
-    user.setPassword(hashedPassword.getResult());
-    user.setUserName(request.getUsername());
-    user.setFullName(request.getFullName());
-    user.setIdNumber(request.getDocumentId());
-    user.setResetPasswordUuid("");
-    user.setStatus(UserStatus.ACTIVE);
-
-    logger.debug("{}", user);
-    return save(user);
-  }
-
-  public User setPassword(SetPasswordRequest request, String resetPasswordUuid)
-      throws BaseException {
-    logger.debug("set password request {} with uuid {}", request, resetPasswordUuid);
-    final var user = findByField(RESET_PASSWORD_UUID, resetPasswordUuid);
-    final var hashedPassword = getHashedPassword(request.getPassword());
-    user.setPassword(hashedPassword.getResult());
-    user.setResetPasswordUuid("");
-
-    return save(user);
-  }
-
   private Hash getHashedPassword(String password) {
     return Password.hash(password).addRandomSalt(16).addPepper(passwordPepper).with(argon2);
   }
 
-  @Override
-  protected UserRepository getRepository() {
-    return (UserRepository) super.getRepository();
-  }
+  public User createTestUser(String email, UserRole userRole) {
+    final var user = new User();
+    final var resetPasswordUuid = UUID.randomUUID().toString();
 
-  @Override
-  public User getNewEntity() {
-    return new User();
-  }
+    user.setEmail(email);
+    user.setRole(userRole);
+    user.setUserName(TEMPORARY);
+    user.setPassword(TEMPORARY);
+    user.setStatus(UserStatus.INACTIVE);
+    user.setResetPasswordUuid(resetPasswordUuid);
+    user.setFullName(TEMPORARY);
+    user.setIdNumber(TEMPORARY);
 
-  @Override
-  public UserRequest getNewRequest() {
-    return new UserRequest();
-  }
-
-  @Override
-  protected BaseException notFoundException() {
-    return new BaseException(ErrorCodes.USER_NOT_FOUND.getCode());
+    return save(user);
   }
 }
