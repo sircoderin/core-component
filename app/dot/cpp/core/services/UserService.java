@@ -127,7 +127,7 @@ public class UserService extends EntityService<User, UserRequest> {
     user.setUserName(request.getUsername());
     user.setFullName(request.getFullName());
     user.setIdNumber(request.getDocumentId());
-    user.setResetPasswordUuid(null);
+    user.setResetPasswordUuid("");
     user.setStatus(UserStatus.ACTIVE);
 
     logger.debug("{}", user);
@@ -140,7 +140,7 @@ public class UserService extends EntityService<User, UserRequest> {
     final var user = findByField(RESET_PASSWORD_UUID, resetPasswordUuid);
     final var hashedPassword = getHashedPassword(request.getPassword());
     user.setPassword(hashedPassword.getResult());
-    user.setResetPasswordUuid(null);
+    user.setResetPasswordUuid("");
 
     return save(user);
   }
