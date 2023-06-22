@@ -1,6 +1,7 @@
 package dot.cpp.core.models.user.request;
 
 import dot.cpp.core.constants.Patterns;
+import dot.cpp.core.models.BaseRequest;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
@@ -8,7 +9,7 @@ import play.data.validation.Constraints;
 import play.libs.Json;
 
 @Constraints.Validate
-public class UserRequest implements Constraints.Validatable<String> {
+public class UserRequest extends BaseRequest implements Constraints.Validatable<String>{
   @NotBlank(message = "constraints.field.mandatory")
   private String username;
 
@@ -72,10 +73,5 @@ public class UserRequest implements Constraints.Validatable<String> {
       return "general.passwords.not.match";
     }
     return null;
-  }
-
-  @Override
-  public String toString() {
-    return Json.toJson(this).toString();
   }
 }

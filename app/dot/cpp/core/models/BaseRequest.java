@@ -1,5 +1,7 @@
 package dot.cpp.core.models;
 
+import play.libs.Json;
+
 public abstract class BaseRequest {
 
   protected String userId;
@@ -20,5 +22,10 @@ public abstract class BaseRequest {
 
   public void setModifiedComment(String modifiedComment) {
     this.modifiedComment = modifiedComment;
+  }
+
+  @Override
+  public String toString() {
+    return Json.toJson(this).toString();
   }
 }

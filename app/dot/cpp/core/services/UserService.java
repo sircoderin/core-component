@@ -14,6 +14,7 @@ import dot.cpp.core.models.user.repository.UserRepository;
 import dot.cpp.core.models.user.request.AcceptInviteRequest;
 import dot.cpp.core.models.user.request.InviteUserRequest;
 import dot.cpp.core.models.user.request.ResetPasswordRequest;
+import dot.cpp.core.models.user.request.UserRequest;
 import java.util.List;
 import java.util.UUID;
 import javax.inject.Inject;
@@ -22,7 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Singleton
-public class UserService extends EntityService<User, InviteUserRequest> {
+public class UserService extends EntityService<User, UserRequest> {
 
   private static final String TEMPORARY = "temporary";
   private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -139,8 +140,8 @@ public class UserService extends EntityService<User, InviteUserRequest> {
   }
 
   @Override
-  public InviteUserRequest getNewRequest() {
-    return new InviteUserRequest();
+  public UserRequest getNewRequest() {
+    return new UserRequest();
   }
 
   @Override
