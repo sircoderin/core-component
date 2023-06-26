@@ -43,7 +43,7 @@ public class AuthenticationAction extends Action<Authentication> {
   @Override
   public CompletionStage<Result> call(Request request) {
 
-    if (!repositoryService.isCollectionInDatabase(USER_COLLECTION)) {
+    if (!databaseInitialized()) {
       return delegate.call(request);
     }
 
@@ -134,5 +134,9 @@ public class AuthenticationAction extends Action<Authentication> {
 
   private boolean isEmpty(String string) {
     return string == null || string.isBlank();
+  }
+
+  private boolean databaseInitialized() {
+    return repositoryService.isCollectionInDatabase(USER_COLLECTION);
   }
 }
