@@ -11,6 +11,7 @@ import dot.cpp.core.exceptions.BaseException;
 import dot.cpp.core.helpers.CookieHelper;
 import dot.cpp.core.models.user.entity.User;
 import dot.cpp.core.services.LoginService;
+import dot.cpp.repository.services.RepositoryService;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -28,13 +29,23 @@ import play.mvc.Result;
 
 public class AuthenticationAction extends Action<Authentication> {
 
-  private static final Logger logger = LoggerFactory.getLogger(AuthenticationAction.class);
+  private static final String USER_COLLECTION = "User";
+  private final Logger logger = LoggerFactory.getLogger(getClass());
 
   @Inject private MessagesApi languageService;
   @Inject private LoginService loginService;
+  @Inject private RepositoryService repositoryService;
+
+  public void setConfiguration(Authentication authenticationConfig) {
+    this.configuration = authenticationConfig;
+  }
 
   @Override
   public CompletionStage<Result> call(Request request) {
+
+    if (!repositoryService.isCollectionInDatabase(USER_COLLECTION)) {
+      return delegate.call(request);
+    }
 
     final var messages = languageService.preferred(request);
     final var accessToken = CookieHelper.getCookieString(request, Constants.ACCESS_TOKEN);

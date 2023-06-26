@@ -7,6 +7,7 @@ import com.password4j.Hash;
 import com.password4j.Password;
 import com.password4j.types.Argon2;
 import com.typesafe.config.Config;
+import dev.morphia.query.filters.Filters;
 import dot.cpp.core.enums.ErrorCodes;
 import dot.cpp.core.enums.UserRole;
 import dot.cpp.core.enums.UserStatus;
@@ -29,6 +30,7 @@ public class UserService extends EntityService<User, UserRequest> {
   private static final String TEMPORARY = "temporary";
   private static final String RESET_PASSWORD_UUID = "resetPasswordUuid";
   public static final String SYSTEM = "system";
+  private static final String EMAIL = "email";
   private final Logger logger = LoggerFactory.getLogger(getClass());
   private final String passwordPepper;
   private final Argon2Function argon2 = Argon2Function.getInstance(1000, 4, 2, 32, Argon2.ID, 19);
@@ -134,6 +136,10 @@ public class UserService extends EntityService<User, UserRequest> {
     }
 
     return user;
+  }
+
+  public boolean emailExists(String email) {
+    return findFirst(Filters.eq(EMAIL, email)) != null;
   }
 
   private Hash getHashedPassword(String password) {

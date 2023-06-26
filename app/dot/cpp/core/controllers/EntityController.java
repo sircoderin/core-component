@@ -16,8 +16,6 @@ import play.mvc.Http;
 
 public class EntityController extends Controller {
 
-  protected final Logger logger = LoggerFactory.getLogger(getClass());
-
   @Inject protected FormFactory formFactory;
   @Inject protected MessagesApi messagesApi;
   @Inject protected RequestErrorService requestErrorService;
