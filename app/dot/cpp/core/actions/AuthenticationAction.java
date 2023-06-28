@@ -8,6 +8,7 @@ import dot.cpp.core.constants.Constants;
 import dot.cpp.core.constants.Patterns;
 import dot.cpp.core.enums.UserRole;
 import dot.cpp.core.exceptions.BaseException;
+import dot.cpp.core.exceptions.LoginException;
 import dot.cpp.core.helpers.CookieHelper;
 import dot.cpp.core.models.user.entity.User;
 import dot.cpp.core.services.LoginService;
@@ -68,7 +69,7 @@ public class AuthenticationAction extends Action<Authentication> {
     try {
       final var user = loginService.authorizeRequest(accessToken, getConfigUserRoles());
       return delegate.call(request.addAttr(Constants.USER, user));
-    } catch (BaseException loginEx) {
+    } catch (LoginException loginEx) {
       logger.debug("{}", loginEx.getMessage());
 
       try {

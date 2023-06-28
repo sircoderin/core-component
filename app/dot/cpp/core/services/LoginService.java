@@ -5,6 +5,7 @@ import dot.cpp.core.constants.Constants;
 import dot.cpp.core.enums.ErrorCodes;
 import dot.cpp.core.enums.UserRole;
 import dot.cpp.core.exceptions.BaseException;
+import dot.cpp.core.exceptions.LoginException;
 import dot.cpp.core.models.session.entity.Session;
 import dot.cpp.core.models.session.repository.SessionRepository;
 import dot.cpp.core.models.user.entity.User;
@@ -96,30 +97,30 @@ public class LoginService {
     return jws;
   }
 
-  public String checkJwtAndGetUserId(String jwtToken) throws BaseException {
+  public String checkJwtAndGetUserId(String jwtToken) throws LoginException {
     logger.debug("{}", jwtToken);
 
     final var claims = getJwsClaims(jwtToken).getBody();
     final var expirationDate = claims.getExpiration();
 
     if (expirationDate.before(new Date())) {
-      throw new BaseException(ErrorCodes.EXPIRED_ACCESS.getCode());
+      throw new LoginException(ErrorCodes.EXPIRED_ACCESS.getCode());
     }
 
     return claims.getSubject();
   }
 
-  private Jws<Claims> getJwsClaims(String jwtToken) throws BaseException {
+  private Jws<Claims> getJwsClaims(String jwtToken) throws LoginException {
     try {
       return Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(jwtToken);
     } catch (Exception e) {
       logger.info("JWT error {}", e.getMessage());
-      throw new BaseException(ErrorCodes.INVALID_JWT.getCode());
+      throw new LoginException(ErrorCodes.INVALID_JWT.getCode());
     }
   }
 
   public User authorizeRequest(String accessToken, List<UserRole> permittedUserRoles)
-      throws BaseException {
+      throws LoginException {
     final String userId = checkJwtAndGetUserId(accessToken);
 
     return userService.userIsActiveAndHasRole(userId, permittedUserRoles);

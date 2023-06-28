@@ -12,6 +12,7 @@ import dot.cpp.core.enums.ErrorCodes;
 import dot.cpp.core.enums.UserRole;
 import dot.cpp.core.enums.UserStatus;
 import dot.cpp.core.exceptions.BaseException;
+import dot.cpp.core.exceptions.LoginException;
 import dot.cpp.core.models.user.entity.User;
 import dot.cpp.core.models.user.repository.UserRepository;
 import dot.cpp.core.models.user.request.AcceptInviteRequest;
@@ -123,19 +124,24 @@ public class UserService extends EntityService<User, UserRequest> {
     return verified;
   }
 
-  public User userIsActiveAndHasRole(String userId, List<UserRole> userRoles) throws BaseException {
+  public User userIsActiveAndHasRole(String userId, List<UserRole> userRoles)
+      throws LoginException {
 
-    final var user = findById(userId);
-    logger.debug("{}", user);
+    try {
+      final var user = findById(userId);
+      logger.debug("{}", user);
 
-    if (!user.isActive()) {
-      throw new BaseException(ErrorCodes.USER_INACTIVE_ACCOUNT.getCode());
+      if (!user.isActive()) {
+        throw new LoginException(ErrorCodes.USER_INACTIVE_ACCOUNT.getCode());
+      }
+      if (!userRoles.isEmpty() && !userRoles.contains(user.getRole())) {
+        throw new LoginException(ErrorCodes.USER_ROLE_MISMATCH.getCode());
+      }
+
+      return user;
+    } catch (BaseException e) {
+      throw new LoginException(ErrorCodes.USER_NOT_FOUND.getCode());
     }
-    if (!userRoles.isEmpty() && !userRoles.contains(user.getRole())) {
-      throw new BaseException(ErrorCodes.USER_ROLE_MISMATCH.getCode());
-    }
-
-    return user;
   }
 
   public boolean emailExists(String email) {
