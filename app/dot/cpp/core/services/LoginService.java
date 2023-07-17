@@ -84,7 +84,7 @@ public class LoginService {
 
   private String getAccessToken(String userId) {
     final var expirationDateAccess = new Date();
-    expirationDateAccess.setTime(expirationDateAccess.getTime() + 1200000L); // 20 minutes
+    expirationDateAccess.setTime(expirationDateAccess.getTime() + 600000L); // 10 minutes
 
     String jws =
         Jwts.builder()
@@ -128,13 +128,16 @@ public class LoginService {
   }
 
   public JsonObject refreshTokens(String refreshToken) throws LoginException {
-
     final Session session = sessionRepository.findByField("refreshToken", refreshToken);
     if (session == null) {
       throw new LoginException(Error.SESSION_NOT_FOUND);
     }
 
     logger.debug("before refresh {}", session);
+
+    if (session.getRefreshExpiryDate() < new Date().getTime()) {
+      throw new LoginException(Error.EXPIRED_REFRESH);
+    }
 
     Date expirationDateRefresh = new Date();
     expirationDateRefresh.setTime(expirationDateRefresh.getTime() + 86400000L); // one day
