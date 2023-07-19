@@ -44,34 +44,32 @@ public class LoginService {
     key = Keys.secretKeyFor(SignatureAlgorithm.HS512);
   }
 
-  public JsonObject login(String userName, String password) throws BaseException {
-    var user = userRepository.findByField("userName", userName);
+  public JsonObject login(String userName, String password) throws LoginException {
+    final var user = userRepository.findByField("userName", userName);
 
     if (user == null) {
-      throw new BaseException(ErrorCodes.USER_NOT_FOUND.getCode());
+      logger.debug("User not found {}", userName);
+      throw LoginException.from(ErrorCodes.USER_NOT_FOUND);
     } else {
-      if (!userService.checkPassword(user.getPassword(), password)) {
-        throw new BaseException(ErrorCodes.INCORRECT_PASSWORD.getCode());
+      if (!userService.passwordIsValid(user.getPassword(), password)) {
+        logger.debug("Failed authentication by {}", userName);
+        throw LoginException.from(ErrorCodes.INCORRECT_PASSWORD);
       }
 
-      logger.debug("{}", user.getRecordId());
-
-      Date expirationDateRefresh = new Date();
+      final var expirationDateRefresh = new Date();
       expirationDateRefresh.setTime(expirationDateRefresh.getTime() + 86400000L); // one day
 
-      var session = new Session();
-      var refreshToken = UUID.randomUUID().toString();
+      final var session = new Session();
+      final var accessToken = getAccessToken(user.getRecordId());
+      final var refreshToken = UUID.randomUUID().toString();
       session.setRefreshToken(refreshToken);
       session.setRefreshExpiryDate(expirationDateRefresh.getTime());
       session.setCreateTime(Instant.now().toEpochMilli());
       session.setUserId(user.getRecordId());
       sessionRepository.save(session);
-
       logger.debug("{}", session);
 
-      final String accessToken = getAccessToken(user.getRecordId());
-
-      final JsonObject tokens = new JsonObject();
+      final var tokens = new JsonObject();
       tokens.addProperty(Constants.ACCESS_TOKEN, accessToken);
       tokens.addProperty(Constants.REFRESH_TOKEN, refreshToken);
 
@@ -104,7 +102,7 @@ public class LoginService {
     final var expirationDate = claims.getExpiration();
 
     if (expirationDate.before(new Date())) {
-      throw new LoginException(ErrorCodes.EXPIRED_ACCESS.getCode());
+      throw LoginException.from(ErrorCodes.EXPIRED_ACCESS);
     }
 
     return claims.getSubject();
@@ -115,22 +113,36 @@ public class LoginService {
       return Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(jwtToken);
     } catch (Exception e) {
       logger.info("JWT error {}", e.getMessage());
-      throw new LoginException(ErrorCodes.INVALID_JWT.getCode());
+      throw LoginException.from(ErrorCodes.INVALID_JWT);
     }
   }
 
   public User authorizeRequest(String accessToken, List<UserRole> permittedUserRoles)
       throws LoginException {
     final String userId = checkJwtAndGetUserId(accessToken);
+    try {
+      final var user = userService.findById(userId);
+      logger.debug("{}", user);
 
-    return userService.userIsActiveAndHasRole(userId, permittedUserRoles);
+      if (!user.isActive()) {
+        throw LoginException.from(ErrorCodes.USER_INACTIVE_ACCOUNT);
+      }
+      if (!permittedUserRoles.isEmpty() && !permittedUserRoles.contains(user.getRole())) {
+        throw LoginException.from(ErrorCodes.USER_ROLE_MISMATCH);
+      }
+
+      return user;
+    } catch (BaseException e) {
+      throw LoginException.from(ErrorCodes.USER_NOT_FOUND);
+    }
   }
 
-  public JsonObject refreshTokens(String refreshToken) throws BaseException {
+
+  public JsonObject refreshTokens(String refreshToken) throws LoginException {
 
     final Session session = sessionRepository.findByField("refreshToken", refreshToken);
     if (session == null) {
-      throw new BaseException(ErrorCodes.SESSION_NOT_FOUND.getCode());
+      throw LoginException.from(ErrorCodes.SESSION_NOT_FOUND);
     }
 
     logger.debug("before refresh {}", session);
@@ -155,10 +167,10 @@ public class LoginService {
     return tokens;
   }
 
-  public void logout(String userId) throws BaseException {
+  public void logout(String userId) throws LoginException {
     final var session = sessionRepository.findByField("userId", userId);
     if (session == null) {
-      throw new BaseException(ErrorCodes.SESSION_NOT_FOUND.getCode());
+      throw LoginException.from(ErrorCodes.SESSION_NOT_FOUND);
     }
 
     sessionRepository.delete(session);

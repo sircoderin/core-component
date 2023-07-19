@@ -12,13 +12,11 @@ import dot.cpp.core.enums.ErrorCodes;
 import dot.cpp.core.enums.UserRole;
 import dot.cpp.core.enums.UserStatus;
 import dot.cpp.core.exceptions.BaseException;
-import dot.cpp.core.exceptions.LoginException;
 import dot.cpp.core.models.user.entity.User;
 import dot.cpp.core.models.user.repository.UserRepository;
 import dot.cpp.core.models.user.request.AcceptInviteRequest;
 import dot.cpp.core.models.user.request.SetPasswordRequest;
 import dot.cpp.core.models.user.request.UserRequest;
-import java.util.List;
 import java.util.UUID;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -62,7 +60,7 @@ public class UserService extends EntityService<User, UserRequest> {
 
   @Override
   protected BaseException notFoundException() {
-    return new BaseException(ErrorCodes.USER_NOT_FOUND.getCode());
+    return BaseException.from(ErrorCodes.USER_NOT_FOUND);
   }
 
   @Override
@@ -105,7 +103,7 @@ public class UserService extends EntityService<User, UserRequest> {
   public String generateResetPasswordUuid(String email) throws BaseException {
     final var user = findByField("email", email);
     if (!user.isActive()) {
-      throw new BaseException(ErrorCodes.USER_INACTIVE_ACCOUNT.getCode());
+      throw BaseException.from(ErrorCodes.USER_INACTIVE_ACCOUNT);
     }
 
     final var resetPasswordUuid = UUID.randomUUID().toString();
@@ -117,31 +115,8 @@ public class UserService extends EntityService<User, UserRequest> {
     return resetPasswordUuid;
   }
 
-  public boolean checkPassword(String hashedPassword, String password) {
-    boolean verified =
-        Password.check(password, hashedPassword).addPepper(passwordPepper).with(argon2);
-    logger.debug("verified {}", verified);
-    return verified;
-  }
-
-  public User userIsActiveAndHasRole(String userId, List<UserRole> userRoles)
-      throws LoginException {
-
-    try {
-      final var user = findById(userId);
-      logger.debug("{}", user);
-
-      if (!user.isActive()) {
-        throw new LoginException(ErrorCodes.USER_INACTIVE_ACCOUNT.getCode());
-      }
-      if (!userRoles.isEmpty() && !userRoles.contains(user.getRole())) {
-        throw new LoginException(ErrorCodes.USER_ROLE_MISMATCH.getCode());
-      }
-
-      return user;
-    } catch (BaseException e) {
-      throw new LoginException(ErrorCodes.USER_NOT_FOUND.getCode());
-    }
+  public boolean passwordIsValid(String actualPassword, String inputPassword) {
+    return Password.check(inputPassword, actualPassword).addPepper(passwordPepper).with(argon2);
   }
 
   public boolean emailExists(String email) {
