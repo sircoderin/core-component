@@ -137,7 +137,6 @@ public class LoginService {
     }
   }
 
-
   public JsonObject refreshTokens(String refreshToken) throws LoginException {
     final Session session = sessionRepository.findByField("refreshToken", refreshToken);
     if (session == null) {
