@@ -9,9 +9,10 @@ public enum ErrorCodes {
   USER_INACTIVE_ACCOUNT(ErrorCode.from(1003, "user.inactive")),
   INCORRECT_PASSWORD(ErrorCode.from(1004, "login.password.invalid")),
   EXPIRED_ACCESS(ErrorCode.from(1005, "login.access.token.expired")),
-  SESSION_NOT_FOUND(ErrorCode.from(1006, "session.not.found")),
-  INVALID_JWT(ErrorCode.from(1007, "invalid.jwt")),
-  FORM_VALIDATION_FAILED(ErrorCode.from(1008, "form.validation.errors"));
+  EXPIRED_REFRESH(ErrorCode.from(1006, "login.refresh.token.expired")),
+  SESSION_NOT_FOUND(ErrorCode.from(1007, "session.not.found")),
+  INVALID_JWT(ErrorCode.from(1008, "invalid.jwt")),
+  FORM_VALIDATION_FAILED(ErrorCode.from(1009, "form.validation.errors"));
 
   final ErrorCode code;
 
