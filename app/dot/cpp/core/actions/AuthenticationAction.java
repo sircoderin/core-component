@@ -52,6 +52,7 @@ public class AuthenticationAction extends Action<Authentication> {
     final var accessToken = CookieHelper.getCookieString(request, Constants.ACCESS_TOKEN);
     final var refreshToken = CookieHelper.getCookieString(request, Constants.REFRESH_TOKEN);
     final var authHeader = request.header(Http.HeaderNames.AUTHORIZATION).orElse("");
+    final var clientIp = request.header(Http.HeaderNames.X_FORWARDED_FOR).orElse("");
 
     logger.debug("Authentication");
     logger.debug("request: {}", request);
@@ -61,7 +62,7 @@ public class AuthenticationAction extends Action<Authentication> {
 
     final var constructedAccessToken = constructToken(authHeader, accessToken);
     if (isEmpty(constructedAccessToken) || isInvalidJwt(constructedAccessToken)) {
-      logger.warn("Token invalid {}", constructedAccessToken);
+      logger.warn("Token invalid {} for client with ip {}", constructedAccessToken, clientIp);
       return statusIfPresentOrResult(redirectWithError(messages));
     }
     logger.debug("{}", constructedAccessToken);
