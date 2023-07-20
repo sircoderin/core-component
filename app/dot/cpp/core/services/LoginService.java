@@ -112,7 +112,7 @@ public class LoginService {
     try {
       return Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(jwtToken);
     } catch (Exception e) {
-      logger.info("JWT error {}", e.getMessage());
+      logger.debug("JWT error {}", e.getMessage());
       throw LoginException.from(ErrorCodes.INVALID_JWT);
     }
   }
