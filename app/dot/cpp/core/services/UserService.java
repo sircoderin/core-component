@@ -1,21 +1,22 @@
 package dot.cpp.core.services;
 
+import static dot.cpp.core.helpers.ValidationHelper.isEmpty;
+
 import com.password4j.Argon2Function;
 import com.password4j.Hash;
 import com.password4j.Password;
 import com.password4j.types.Argon2;
 import com.typesafe.config.Config;
-import dot.cpp.core.enums.Error;
+import dev.morphia.query.filters.Filters;
+import dot.cpp.core.enums.ErrorCodes;
 import dot.cpp.core.enums.UserRole;
 import dot.cpp.core.enums.UserStatus;
-import dot.cpp.core.exceptions.EntityNotFoundException;
-import dot.cpp.core.exceptions.UserException;
+import dot.cpp.core.exceptions.BaseException;
 import dot.cpp.core.models.user.entity.User;
 import dot.cpp.core.models.user.repository.UserRepository;
 import dot.cpp.core.models.user.request.AcceptInviteRequest;
-import dot.cpp.core.models.user.request.InviteUserRequest;
-import dot.cpp.core.models.user.request.ResetPasswordRequest;
-import java.util.List;
+import dot.cpp.core.models.user.request.SetPasswordRequest;
+import dot.cpp.core.models.user.request.UserRequest;
 import java.util.UUID;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -23,9 +24,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Singleton
-public class UserService extends EntityService<User, InviteUserRequest> {
+public class UserService extends EntityService<User, UserRequest> {
 
   private static final String TEMPORARY = "temporary";
+  private static final String RESET_PASSWORD_UUID = "resetPasswordUuid";
+  public static final String SYSTEM = "system";
+  private static final String EMAIL = "email";
   private final Logger logger = LoggerFactory.getLogger(getClass());
   private final String passwordPepper;
   private final Argon2Function argon2 = Argon2Function.getInstance(1000, 4, 2, 32, Argon2.ID, 19);
@@ -36,7 +40,94 @@ public class UserService extends EntityService<User, InviteUserRequest> {
     this.passwordPepper = config.getString("password.pepper");
   }
 
-  public String generateUserWithInvitation(String email, UserRole userRole) {
+  @Override
+  public void setEntityFromRequest(User entity, UserRequest request) throws BaseException {
+    if (isEmpty(entity.getPassword())) {
+      entity.setPassword("temp123456789");
+    }
+    super.setEntityFromRequest(entity, request);
+  }
+
+  @Override
+  public User getNewEntity() {
+    return new User();
+  }
+
+  @Override
+  public UserRequest getNewRequest() {
+    return new UserRequest();
+  }
+
+  @Override
+  protected BaseException notFoundException() {
+    return BaseException.from(ErrorCodes.USER_NOT_FOUND);
+  }
+
+  @Override
+  protected UserRepository getRepository() {
+    return (UserRepository) super.getRepository();
+  }
+
+  public User acceptInvitation(AcceptInviteRequest request, String resetPasswordUuid)
+      throws BaseException {
+    logger.debug("accept invitation request {} with uuid {}", request, resetPasswordUuid);
+
+    final var user = findByField(RESET_PASSWORD_UUID, resetPasswordUuid);
+    final var hashedPassword = getHashedPassword(request.getPassword());
+
+    user.setPassword(hashedPassword.getResult());
+    user.setUserName(request.getUsername());
+    user.setFullName(request.getFullName());
+    user.setIdNumber(request.getDocumentId());
+    user.setResetPasswordUuid("");
+    user.setStatus(UserStatus.ACTIVE);
+
+    user.setModifiedComment("Accept invite");
+
+    logger.debug("{}", user);
+    return saveWithHistory(user, SYSTEM);
+  }
+
+  public User setPassword(SetPasswordRequest request, String resetPasswordUuid)
+      throws BaseException {
+    logger.debug("set password request {} with uuid {}", request, resetPasswordUuid);
+    final var user = findByField(RESET_PASSWORD_UUID, resetPasswordUuid);
+    final var hashedPassword = getHashedPassword(request.getPassword());
+    user.setPassword(hashedPassword.getResult());
+    user.setResetPasswordUuid("");
+    user.setModifiedComment("Set password");
+
+    return saveWithHistory(user, SYSTEM);
+  }
+
+  public String generateResetPasswordUuid(String email) throws BaseException {
+    final var user = findByField("email", email);
+    if (!user.isActive()) {
+      throw BaseException.from(ErrorCodes.USER_INACTIVE_ACCOUNT);
+    }
+
+    final var resetPasswordUuid = UUID.randomUUID().toString();
+    user.setResetPasswordUuid(resetPasswordUuid);
+    user.setModifiedComment("Reset password");
+    saveWithHistory(user, SYSTEM);
+
+    logger.debug("{}", user);
+    return resetPasswordUuid;
+  }
+
+  public boolean passwordIsValid(String actualPassword, String inputPassword) {
+    return Password.check(inputPassword, actualPassword).addPepper(passwordPepper).with(argon2);
+  }
+
+  public boolean emailExists(String email) {
+    return findFirst(Filters.eq(EMAIL, email)) != null;
+  }
+
+  private Hash getHashedPassword(String password) {
+    return Password.hash(password).addRandomSalt(16).addPepper(passwordPepper).with(argon2);
+  }
+
+  public User createTestUser(String email, UserRole userRole) {
     final var user = new User();
     final var resetPasswordUuid = UUID.randomUUID().toString();
 
@@ -47,108 +138,8 @@ public class UserService extends EntityService<User, InviteUserRequest> {
     user.setStatus(UserStatus.INACTIVE);
     user.setResetPasswordUuid(resetPasswordUuid);
     user.setFullName(TEMPORARY);
-    user.setDocumentId(TEMPORARY);
+    user.setIdNumber(TEMPORARY);
 
-    save(user);
-
-    return resetPasswordUuid;
-  }
-
-  public String generateResetPasswordUuid(String email) throws UserException {
-
-    try {
-      final User user = findByField("email", email);
-      if (!user.isActive()) {
-        throw new UserException(Error.ACCOUNT_INACTIVE);
-      }
-
-      final String resetPasswordUuid = UUID.randomUUID().toString();
-      user.setResetPasswordUuid(resetPasswordUuid);
-      save(user);
-
-      logger.debug("{}", user);
-      return resetPasswordUuid;
-    } catch (EntityNotFoundException e) {
-      throw new UserException(Error.USER_EMAIL_NOT_FOUND);
-    }
-  }
-
-  public User resetPassword(ResetPasswordRequest resetPasswordRequest, String resetPasswordUuid)
-      throws EntityNotFoundException {
-    logger.debug("{}", resetPasswordRequest);
-    logger.debug("{}", resetPasswordUuid);
-
-    final var user = findByField("resetPasswordUuid", resetPasswordUuid);
-
-    final Hash hashedPassword = getHashedPassword(resetPasswordRequest.getPassword());
-    logger.debug("{}", hashedPassword);
-    user.setPassword(hashedPassword.getResult());
-    user.setResetPasswordUuid("");
-
-    logger.debug("{}", user);
-    save(user);
-    return user;
-  }
-
-  public boolean checkPassword(String hashedPassword, String password) {
-    boolean verified =
-        Password.check(password, hashedPassword).addPepper(passwordPepper).with(argon2);
-    logger.debug("verified {}", verified);
-    return verified;
-  }
-
-  public User userIsActiveAndHasRole(String userId, List<UserRole> userRoles)
-      throws UserException, EntityNotFoundException {
-
-    final var user = findById(userId);
-    logger.debug("{}", user);
-
-    if (!user.isActive()) {
-      throw new UserException(Error.ACCOUNT_INACTIVE);
-    }
-    if (!userRoles.isEmpty() && !userRoles.contains(user.getRole())) {
-      throw new UserException(Error.USER_ROLE_MISMATCH);
-    }
-
-    return user;
-  }
-
-  public User acceptInvitation(AcceptInviteRequest request, String resetPasswordUuid)
-      throws EntityNotFoundException {
-    logger.debug("{}\n{}", request, resetPasswordUuid);
-
-    final var user = findByField("resetPasswordUuid", resetPasswordUuid);
-
-    final var hashedPassword = getHashedPassword(request.getPassword());
-
-    user.setPassword(hashedPassword.getResult());
-    user.setUserName(request.getUsername());
-    user.setFullName(request.getFullName());
-    user.setDocumentId(request.getDocumentId());
-    user.setResetPasswordUuid("");
-    user.setStatus(UserStatus.ACTIVE);
-
-    logger.debug("{}", user);
-    save(user);
-    return user;
-  }
-
-  private Hash getHashedPassword(String password) {
-    return Password.hash(password).addRandomSalt(16).addPepper(passwordPepper).with(argon2);
-  }
-
-  @Override
-  protected UserRepository getRepository() {
-    return (UserRepository) super.getRepository();
-  }
-
-  @Override
-  public User getNewEntity() {
-    return new User();
-  }
-
-  @Override
-  public InviteUserRequest getNewRequest() {
-    return new InviteUserRequest();
+    return save(user);
   }
 }

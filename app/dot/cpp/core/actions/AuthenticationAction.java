@@ -7,12 +7,12 @@ import dot.cpp.core.annotations.Authentication;
 import dot.cpp.core.constants.Constants;
 import dot.cpp.core.constants.Patterns;
 import dot.cpp.core.enums.UserRole;
-import dot.cpp.core.exceptions.EntityNotFoundException;
+import dot.cpp.core.exceptions.BaseException;
 import dot.cpp.core.exceptions.LoginException;
-import dot.cpp.core.exceptions.UserException;
 import dot.cpp.core.helpers.CookieHelper;
 import dot.cpp.core.models.user.entity.User;
 import dot.cpp.core.services.LoginService;
+import dot.cpp.repository.services.RepositoryService;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -30,18 +30,29 @@ import play.mvc.Result;
 
 public class AuthenticationAction extends Action<Authentication> {
 
-  private static final Logger logger = LoggerFactory.getLogger(AuthenticationAction.class);
+  private static final String USER_COLLECTION = "User";
+  private final Logger logger = LoggerFactory.getLogger(getClass());
 
   @Inject private MessagesApi languageService;
   @Inject private LoginService loginService;
+  @Inject private RepositoryService repositoryService;
+
+  public void setConfiguration(Authentication authenticationConfig) {
+    this.configuration = authenticationConfig;
+  }
 
   @Override
   public CompletionStage<Result> call(Request request) {
+
+    if (!databaseInitialized()) {
+      return delegate.call(request);
+    }
 
     final var messages = languageService.preferred(request);
     final var accessToken = CookieHelper.getCookieString(request, Constants.ACCESS_TOKEN);
     final var refreshToken = CookieHelper.getCookieString(request, Constants.REFRESH_TOKEN);
     final var authHeader = request.header(Http.HeaderNames.AUTHORIZATION).orElse("");
+    final var clientIp = request.header(Http.HeaderNames.X_FORWARDED_FOR).orElse("");
 
     logger.debug("Authentication");
     logger.debug("request: {}", request);
@@ -51,7 +62,7 @@ public class AuthenticationAction extends Action<Authentication> {
 
     final var constructedAccessToken = constructToken(authHeader, accessToken);
     if (isEmpty(constructedAccessToken) || isInvalidJwt(constructedAccessToken)) {
-      logger.warn("Token invalid {}", constructedAccessToken);
+      logger.warn("Token invalid {} for client with ip {}", constructedAccessToken, clientIp);
       return statusIfPresentOrResult(redirectWithError(messages));
     }
     logger.debug("{}", constructedAccessToken);
@@ -68,11 +79,9 @@ public class AuthenticationAction extends Action<Authentication> {
             loginService.authorizeRequest(
                 tokens.get(Constants.ACCESS_TOKEN).getAsString(), getConfigUserRoles());
         return getSuccessfulResult(request, user, tokens);
-      } catch (LoginException | UserException | EntityNotFoundException refreshException) {
-        return getCompletableFutureResultOnError(messages, refreshException);
+      } catch (BaseException exception) {
+        return getCompletableFutureResultOnError(messages, exception);
       }
-    } catch (UserException | EntityNotFoundException userEx) {
-      return getCompletableFutureResultOnError(messages, userEx);
     }
   }
 
@@ -127,5 +136,9 @@ public class AuthenticationAction extends Action<Authentication> {
 
   private boolean isEmpty(String string) {
     return string == null || string.isBlank();
+  }
+
+  private boolean databaseInitialized() {
+    return repositoryService.isCollectionInDatabase(USER_COLLECTION);
   }
 }

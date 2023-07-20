@@ -9,8 +9,7 @@ import play.data.validation.Constraints.Validatable;
 import play.data.validation.Constraints.Validate;
 import play.libs.Json;
 
-@Validate
-public class InviteUserRequest extends BaseRequest implements Validatable<String> {
+public class InviteUserRequest extends BaseRequest {
 
   @Pattern(regexp = Patterns.EMAIL, message = "constraints.field.invalid")
   private String email;
@@ -31,15 +30,5 @@ public class InviteUserRequest extends BaseRequest implements Validatable<String
 
   public void setUserRole(UserRole userRole) {
     this.userRole = userRole;
-  }
-
-  @Override
-  public String validate() {
-    return null;
-  }
-
-  @Override
-  public String toString() {
-    return Json.stringify(Json.toJson(this));
   }
 }

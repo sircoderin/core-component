@@ -1,8 +1,8 @@
 package dot.cpp.core.enums;
 
 public enum UserRole {
-  USER("User"),
-  ADMIN("Admin");
+  USER("Utilizator"),
+  ADMIN("Administrator");
 
   private final String value;
 

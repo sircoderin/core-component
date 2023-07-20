@@ -1,21 +1,21 @@
 package dot.cpp.core.exceptions;
 
+import dot.cpp.core.enums.ErrorCodes;
+
 public class BaseException extends Exception {
 
-  public BaseException(String message) {
-    super(message);
+  private final transient ErrorCode errorCode;
+
+  public BaseException(ErrorCode errorCode) {
+    super(errorCode.getMessage());
+    this.errorCode = errorCode;
   }
 
-  public BaseException(String message, Throwable cause) {
-    super(message, cause);
+  public static BaseException from(ErrorCodes errorCode) {
+    return new BaseException(errorCode.getCode());
   }
 
-  public BaseException(Throwable cause) {
-    super(cause);
-  }
-
-  public BaseException(
-      String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
-    super(message, cause, enableSuppression, writableStackTrace);
+  public ErrorCode getErrorCode() {
+    return errorCode;
   }
 }

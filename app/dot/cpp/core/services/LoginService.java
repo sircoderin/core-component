@@ -2,11 +2,10 @@ package dot.cpp.core.services;
 
 import com.google.gson.JsonObject;
 import dot.cpp.core.constants.Constants;
-import dot.cpp.core.enums.Error;
+import dot.cpp.core.enums.ErrorCodes;
 import dot.cpp.core.enums.UserRole;
-import dot.cpp.core.exceptions.EntityNotFoundException;
+import dot.cpp.core.exceptions.BaseException;
 import dot.cpp.core.exceptions.LoginException;
-import dot.cpp.core.exceptions.UserException;
 import dot.cpp.core.models.session.entity.Session;
 import dot.cpp.core.models.session.repository.SessionRepository;
 import dot.cpp.core.models.user.entity.User;
@@ -46,33 +45,31 @@ public class LoginService {
   }
 
   public JsonObject login(String userName, String password) throws LoginException {
-    var user = userRepository.findByField("userName", userName);
+    final var user = userRepository.findByField("userName", userName);
 
     if (user == null) {
-      throw new LoginException(Error.NOT_FOUND);
+      logger.debug("User not found {}", userName);
+      throw LoginException.from(ErrorCodes.USER_NOT_FOUND);
     } else {
-      if (!userService.checkPassword(user.getPassword(), password)) {
-        throw new LoginException(Error.INCORRECT_PASSWORD);
+      if (!userService.passwordIsValid(user.getPassword(), password)) {
+        logger.debug("Failed authentication by {}", userName);
+        throw LoginException.from(ErrorCodes.INCORRECT_PASSWORD);
       }
 
-      logger.debug("{}", user.getRecordId());
-
-      Date expirationDateRefresh = new Date();
+      final var expirationDateRefresh = new Date();
       expirationDateRefresh.setTime(expirationDateRefresh.getTime() + 86400000L); // one day
 
-      var session = new Session();
-      var refreshToken = UUID.randomUUID().toString();
+      final var session = new Session();
+      final var accessToken = getAccessToken(user.getRecordId());
+      final var refreshToken = UUID.randomUUID().toString();
       session.setRefreshToken(refreshToken);
       session.setRefreshExpiryDate(expirationDateRefresh.getTime());
       session.setCreateTime(Instant.now().toEpochMilli());
       session.setUserId(user.getRecordId());
       sessionRepository.save(session);
-
       logger.debug("{}", session);
 
-      final String accessToken = getAccessToken(user.getRecordId());
-
-      final JsonObject tokens = new JsonObject();
+      final var tokens = new JsonObject();
       tokens.addProperty(Constants.ACCESS_TOKEN, accessToken);
       tokens.addProperty(Constants.REFRESH_TOKEN, refreshToken);
 
@@ -105,7 +102,7 @@ public class LoginService {
     final var expirationDate = claims.getExpiration();
 
     if (expirationDate.before(new Date())) {
-      throw new LoginException(Error.EXPIRED_ACCESS);
+      throw LoginException.from(ErrorCodes.EXPIRED_ACCESS);
     }
 
     return claims.getSubject();
@@ -115,28 +112,41 @@ public class LoginService {
     try {
       return Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(jwtToken);
     } catch (Exception e) {
-      logger.info("JWT error {}", e.getMessage());
-      throw new LoginException(Error.INVALID_JWT);
+      logger.debug("JWT error {}", e.getMessage());
+      throw LoginException.from(ErrorCodes.INVALID_JWT);
     }
   }
 
   public User authorizeRequest(String accessToken, List<UserRole> permittedUserRoles)
-      throws LoginException, UserException, EntityNotFoundException {
+      throws LoginException {
     final String userId = checkJwtAndGetUserId(accessToken);
+    try {
+      final var user = userService.findById(userId);
+      logger.debug("{}", user);
 
-    return userService.userIsActiveAndHasRole(userId, permittedUserRoles);
+      if (!user.isActive()) {
+        throw LoginException.from(ErrorCodes.USER_INACTIVE_ACCOUNT);
+      }
+      if (!permittedUserRoles.isEmpty() && !permittedUserRoles.contains(user.getRole())) {
+        throw LoginException.from(ErrorCodes.USER_ROLE_MISMATCH);
+      }
+
+      return user;
+    } catch (BaseException e) {
+      throw LoginException.from(ErrorCodes.USER_NOT_FOUND);
+    }
   }
 
   public JsonObject refreshTokens(String refreshToken) throws LoginException {
     final Session session = sessionRepository.findByField("refreshToken", refreshToken);
     if (session == null) {
-      throw new LoginException(Error.SESSION_NOT_FOUND);
+      throw LoginException.from(ErrorCodes.SESSION_NOT_FOUND);
     }
 
     logger.debug("before refresh {}", session);
 
     if (session.getRefreshExpiryDate() < new Date().getTime()) {
-      throw new LoginException(Error.EXPIRED_REFRESH);
+      throw LoginException.from(ErrorCodes.EXPIRED_REFRESH);
     }
 
     Date expirationDateRefresh = new Date();
@@ -159,10 +169,10 @@ public class LoginService {
     return tokens;
   }
 
-  public void logout(String userId) throws UserException {
+  public void logout(String userId) throws LoginException {
     final var session = sessionRepository.findByField("userId", userId);
     if (session == null) {
-      throw new UserException(Error.SESSION_NOT_FOUND);
+      throw LoginException.from(ErrorCodes.SESSION_NOT_FOUND);
     }
 
     sessionRepository.delete(session);
