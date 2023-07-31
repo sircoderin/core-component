@@ -29,7 +29,7 @@ public class UserService extends EntityService<User, UserRequest> {
   private static final String TEMPORARY = "temporary";
   private static final String RESET_PASSWORD_UUID = "resetPasswordUuid";
   public static final String SYSTEM = "system";
-  private static final String EMAIL = "email";
+  public static final String EMAIL = "email";
   private final Logger logger = LoggerFactory.getLogger(getClass());
   private final String passwordPepper;
   private final Argon2Function argon2 = Argon2Function.getInstance(1000, 4, 2, 32, Argon2.ID, 19);
@@ -88,29 +88,31 @@ public class UserService extends EntityService<User, UserRequest> {
     return saveWithHistory(user, SYSTEM);
   }
 
-  public User setPassword(SetPasswordRequest request, String resetPasswordUuid)
+  public User setPassword(
+      SetPasswordRequest request, String resetPasswordUuid, String modifiedComment)
       throws BaseException {
     logger.debug("set password request {} with uuid {}", request, resetPasswordUuid);
     final var user = findByField(RESET_PASSWORD_UUID, resetPasswordUuid);
     final var hashedPassword = getHashedPassword(request.getPassword());
     user.setPassword(hashedPassword.getResult());
     user.setResetPasswordUuid("");
-    user.setModifiedComment("Set password");
+    user.setModifiedComment(modifiedComment != null ? modifiedComment : "Set password");
 
-    return saveWithHistory(user, SYSTEM);
+    return saveWithHistory(user, user.getRecordId());
   }
 
-  public String generateResetPasswordUuid(String email) throws BaseException {
-    final var user = findByField("email", email);
+  public String generateResetPasswordUuid(String email, String modifiedComment)
+      throws BaseException {
+    final var user = findByField(EMAIL, email);
     if (!user.isActive()) {
       throw BaseException.from(ErrorCodes.USER_INACTIVE_ACCOUNT);
     }
 
     final var resetPasswordUuid = UUID.randomUUID().toString();
     user.setResetPasswordUuid(resetPasswordUuid);
-    user.setModifiedComment("Reset password");
-    saveWithHistory(user, SYSTEM);
+    user.setModifiedComment(modifiedComment != null ? modifiedComment : "Reset password");
 
+    saveWithHistory(user, user.getRecordId());
     logger.debug("{}", user);
     return resetPasswordUuid;
   }
