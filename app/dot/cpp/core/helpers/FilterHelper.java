@@ -1,5 +1,7 @@
 package dot.cpp.core.helpers;
 
+import static dot.cpp.core.helpers.ValidationHelper.isEmpty;
+
 import dev.morphia.aggregation.expressions.Expressions;
 import dev.morphia.aggregation.expressions.impls.Expression;
 import dev.morphia.aggregation.stages.Match;
@@ -35,7 +37,7 @@ public final class FilterHelper {
   }
 
   public static Filter contains(String fieldName, String value) {
-    return Filters.regex(fieldName).pattern("(?i).*" + value + ".*");
+    return isEmpty(value) ? null : Filters.regex(fieldName).pattern("(?i).*" + value + ".*");
   }
 
   public static Filter in(String field, List<String> values) {
