@@ -12,7 +12,8 @@ public enum ErrorCodes {
   EXPIRED_REFRESH(ErrorCode.from(1006, "login.refresh.token.expired")),
   SESSION_NOT_FOUND(ErrorCode.from(1007, "session.not.found")),
   INVALID_JWT(ErrorCode.from(1008, "invalid.jwt")),
-  FORM_VALIDATION_FAILED(ErrorCode.from(1009, "form.validation.errors"));
+  FORM_VALIDATION_FAILED(ErrorCode.from(1009, "form.validation.errors")),
+  GENERAL_ERROR(ErrorCode.from(1010, "general.application.error"));
 
   final ErrorCode code;
 
