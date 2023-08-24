@@ -91,7 +91,7 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
   }
 
   public List<T> listByIds(Collection<String> ids, Sort... sortBy) {
-    return listByFieldWithPossibleValues(RECORD_ID, ids, sortBy);
+    return ids.isEmpty() ? List.of() : listByFieldWithPossibleValues(RECORD_ID, ids, sortBy);
   }
 
   public List<T> listByField(String field, String value, Sort... sortBy) {
