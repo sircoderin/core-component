@@ -178,13 +178,13 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
   }
 
   public T save(String id, S request) throws BaseException {
-    final var entity = findByIdOrGetNewEntity(id);
-    setEntityFromRequest(entity, request);
+    final var oldEntity = findByIdOrGetNewEntity(id);
+    setEntityFromRequest(oldEntity, request);
 
-    saveWithHistory(entity, request.getUserId());
-    processAfterSave(entity);
+    saveWithHistory(oldEntity, request.getUserId());
+    processAfterSave(oldEntity, request.getUserId());
 
-    return entity;
+    return oldEntity;
   }
 
   public T saveWithHistory(T entity) {
@@ -265,7 +265,7 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
     BeanUtils.copyProperties(entity, request);
   }
 
-  protected void processAfterSave(T entity) throws BaseException {}
+  protected void processAfterSave(T entity, String userId) throws BaseException {}
 
   public abstract T getNewEntity();
 
