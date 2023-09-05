@@ -200,6 +200,10 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
     repository.delete(entity);
   }
 
+  public long delete(Filter filter) {
+    return repository.deleteWithFilter(filter);
+  }
+
   public S getRequest(String id) throws BaseException {
     return getRequest(id, null);
   }
@@ -263,6 +267,10 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
 
   public void setRequestFromEntity(S request, T entity) throws BaseException {
     BeanUtils.copyProperties(entity, request);
+  }
+
+  public void emptyCollection() {
+    repository.emptyCollection();
   }
 
   protected void processAfterSave(T entity, String userId) throws BaseException {}
