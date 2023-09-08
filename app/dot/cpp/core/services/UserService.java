@@ -129,7 +129,7 @@ public class UserService extends EntityService<User, UserRequest> {
     return Password.hash(password).addRandomSalt(16).addPepper(passwordPepper).with(argon2);
   }
 
-  public User createTestUser(String email, UserRole userRole) {
+  public User createTestUser(String email, UserRole userRole) throws BaseException {
     final var user = new User();
     final var resetPasswordUuid = UUID.randomUUID().toString();
 
