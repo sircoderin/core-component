@@ -8,6 +8,7 @@ import com.typesafe.config.Config;
 import dev.morphia.query.Sort;
 import dev.morphia.query.filters.Filter;
 import dev.morphia.query.filters.Filters;
+import dot.cpp.core.enums.ErrorCodes;
 import dot.cpp.core.exceptions.BaseException;
 import dot.cpp.core.models.BaseRequest;
 import dot.cpp.core.models.HistoryEntry;
@@ -21,6 +22,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
+import javax.validation.Validation;
+import javax.validation.Validator;
+import org.hibernate.validator.messageinterpolation.ParameterMessageInterpolator;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,12 +36,20 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
   private final BaseRepository<T> repository;
+  private final Validator validator;
   protected final int pageSize;
 
   @Inject private UserRepository userRepository;
 
   protected EntityService(BaseRepository<T> repository, Config config) {
     this.repository = repository;
+    try (final var factory =
+        Validation.byDefaultProvider()
+            .configure()
+            .messageInterpolator(new ParameterMessageInterpolator())
+            .buildValidatorFactory()) {
+      validator = factory.getValidator();
+    }
     this.pageSize = config.getInt("list.page.size");
   }
 
@@ -169,31 +181,45 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
     return getPagesNumber((int) count(filter), pageSize);
   }
 
-  public T save(T entity) {
+  public T save(T entity) throws BaseException {
+    validateEntity(entity);
     return repository.save(entity);
   }
 
-  public List<T> save(List<T> entities) {
+  public List<T> save(List<T> entities) throws BaseException {
+    for (var entity : entities) {
+      validateEntity(entity);
+    }
     return repository.save(entities);
   }
 
   public T save(String id, S request) throws BaseException {
-    final var oldEntity = findByIdOrGetNewEntity(id);
-    setEntityFromRequest(oldEntity, request);
+    final var entity = findByIdOrGetNewEntity(id);
+    setEntityFromRequest(entity, request);
 
-    saveWithHistory(oldEntity, request.getUserId());
-    processAfterSave(oldEntity, request.getUserId());
+    saveWithHistory(entity, request.getUserId());
+    processAfterSave(entity, request.getUserId());
 
-    return oldEntity;
+    return entity;
   }
 
-  public T saveWithHistory(T entity) {
+  public T saveWithHistory(T entity) throws BaseException {
+    validateEntity(entity);
     return repository.saveWithHistory(entity);
   }
 
-  public T saveWithHistory(T entity, String userId) {
+  public T saveWithHistory(T entity, String userId) throws BaseException {
+    validateEntity(entity);
     entity.setModifiedBy(userId);
     return repository.saveWithHistory(entity);
+  }
+
+  private void validateEntity(T entity) throws BaseException {
+    final var violations = validator.validate(entity);
+    if (!violations.isEmpty()) {
+      logger.error("{}", violations);
+      throw BaseException.from(ErrorCodes.GENERAL_ERROR);
+    }
   }
 
   public void delete(T entity) {
