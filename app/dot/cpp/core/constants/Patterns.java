@@ -1,6 +1,8 @@
 package dot.cpp.core.constants;
 
-public class Patterns {
+public final class Patterns {
+
+  private Patterns() {}
 
   public static final String NO_WHITESPACE = "^\\S*$";
 
@@ -9,10 +11,10 @@ public class Patterns {
   public static final String REQUIRED_NAME = "^([ \\u00c0-\\u01ffa-zA-Z'\\-])+$";
 
   public static final String PHONE_NUMBER =
-      "^$|^\\+?\\(?[0-9]{1,3}\\)?[-\\s\\./0-9]{3,20}$";
+      "^$|^\\+?\\(?\\d{1,3}\\)?[-\\s./\\d]{3,20}$";
 
   public static final String REQUIRED_PHONE_NUMBER =
-      "^\\+?\\(?[0-9]{1,3}\\)?[-\\s\\./0-9]{3,20}$";
+      "^\\+?\\(?\\d{1,3}\\)?[-\\s./\\d]{3,20}$";
 
   public static final String EMAIL = "^$|^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,10}$";
 
