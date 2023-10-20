@@ -30,7 +30,7 @@ public final class RequestErrorService {
   @Inject
   public RequestErrorService(MessagesApi messagesApi, Config config) {
     this.messagesApi = messagesApi;
-    this.logFormExceptions = config.getBoolean("logFormExceptions");
+    this.logFormExceptions = config.getBoolean("log.form.exceptions");
   }
 
   /**
