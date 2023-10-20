@@ -1,30 +1,17 @@
 package dot.cpp.core.helpers;
 
+import com.google.gson.JsonObject;
 import dot.cpp.core.constants.Constants;
-import dot.cpp.core.models.session.entity.Session;
 import play.mvc.Http;
 import play.mvc.Result;
 
 public class CookieHelper {
 
-  /** Get access cookie for an application. */
-  public static Http.Cookie getAccessCookie(Session session) {
-    return getCookie(Constants.ACCESS_TOKEN, session.getAccessToken());
-  }
-
-  /** Get refresh cookie for an application. */
-  public static Http.Cookie getRefreshCookie(Session session) {
-    return getCookie(Constants.REFRESH_TOKEN, session.getRefreshToken());
-  }
-
-  /**
-   * Get cookie for an application.
-   *
-   * @param session {@link Session}
-   * @return {@link Http.Cookie} the cookie containing authorization
-   */
-  public static Http.Cookie getCookie(String cookieName, String session) {
-    return Http.Cookie.builder(cookieName, session).withHttpOnly(false).withSecure(true).build();
+  public static Http.Cookie getCookie(String cookieName, JsonObject tokens, boolean isSecure) {
+    return Http.Cookie.builder(cookieName, tokens.get(cookieName).getAsString())
+        .withHttpOnly(true)
+        .withSecure(isSecure)
+        .build();
   }
 
   /**

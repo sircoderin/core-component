@@ -28,23 +28,6 @@ public class Session extends BaseEntity {
     return refreshExpiryDate == null || refreshExpiryDate == 0;
   }
 
-  /**
-   * Returns "Authorisation" cookie specific to this Session.
-   *
-   * @return Cookie
-   */
-  @JsonIgnore
-  public Cookie getAuthorisationCookie() {
-    if (cookie == null) {
-      cookie =
-          Cookie.builder(Http.HeaderNames.AUTHORIZATION, accessToken)
-              .withSecure(true)
-              .withHttpOnly(true)
-              .build();
-    }
-    return cookie;
-  }
-
   @Override
   public String toString() {
     return Json.stringify(Json.toJson(this));

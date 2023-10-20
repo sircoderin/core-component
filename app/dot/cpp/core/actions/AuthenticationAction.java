@@ -1,8 +1,11 @@
 package dot.cpp.core.actions;
 
+import static dot.cpp.core.constants.Constants.ACCESS_TOKEN;
+import static dot.cpp.core.constants.Constants.REFRESH_TOKEN;
 import static dot.cpp.core.helpers.CookieHelper.getCookie;
 
 import com.google.gson.JsonObject;
+import com.typesafe.config.Config;
 import dot.cpp.core.annotations.Authentication;
 import dot.cpp.core.constants.Constants;
 import dot.cpp.core.constants.Patterns;
@@ -36,6 +39,7 @@ public class AuthenticationAction extends Action<Authentication> {
   @Inject private MessagesApi languageService;
   @Inject private LoginService loginService;
   @Inject private RepositoryService repositoryService;
+  @Inject private Config config;
 
   public void setConfiguration(Authentication authenticationConfig) {
     this.configuration = authenticationConfig;
@@ -49,8 +53,8 @@ public class AuthenticationAction extends Action<Authentication> {
     }
 
     final var messages = languageService.preferred(request);
-    final var accessToken = CookieHelper.getCookieString(request, Constants.ACCESS_TOKEN);
-    final var refreshToken = CookieHelper.getCookieString(request, Constants.REFRESH_TOKEN);
+    final var accessToken = CookieHelper.getCookieString(request, ACCESS_TOKEN);
+    final var refreshToken = CookieHelper.getCookieString(request, REFRESH_TOKEN);
     final var authHeader = request.header(Http.HeaderNames.AUTHORIZATION).orElse("");
     final var clientIp = request.header(Http.HeaderNames.X_FORWARDED_FOR).orElse("");
 
@@ -77,7 +81,7 @@ public class AuthenticationAction extends Action<Authentication> {
         final var tokens = loginService.refreshTokens(refreshToken);
         final var user =
             loginService.authorizeRequest(
-                tokens.get(Constants.ACCESS_TOKEN).getAsString(), getConfigUserRoles());
+                tokens.get(ACCESS_TOKEN).getAsString(), getConfigUserRoles());
         return getSuccessfulResult(request, user, tokens);
       } catch (BaseException exception) {
         return getCompletableFutureResultOnError(messages, exception);
@@ -97,16 +101,14 @@ public class AuthenticationAction extends Action<Authentication> {
 
   private CompletionStage<Result> getSuccessfulResult(
       Request request, User user, JsonObject tokens) {
+    final var secureCookie = config.getBoolean("play.http.session.secure");
     return delegate
         .call(request.addAttr(Constants.USER, user))
         .thenApply(
             result ->
                 result.withCookies(
-                    getCookie(
-                        Constants.ACCESS_TOKEN, tokens.get(Constants.ACCESS_TOKEN).getAsString()),
-                    getCookie(
-                        Constants.REFRESH_TOKEN,
-                        tokens.get(Constants.REFRESH_TOKEN).getAsString())));
+                    getCookie(ACCESS_TOKEN, tokens, secureCookie),
+                    getCookie(REFRESH_TOKEN, tokens, secureCookie)));
   }
 
   private String constructToken(
