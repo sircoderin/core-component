@@ -2,6 +2,7 @@ package dot.cpp.core.services;
 
 import static play.mvc.Results.redirect;
 
+import com.typesafe.config.Config;
 import dot.cpp.core.exceptions.FormException;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -24,10 +25,12 @@ public final class RequestErrorService {
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
   private final MessagesApi messagesApi;
+  private final boolean logFormExceptions;
 
   @Inject
-  public RequestErrorService(MessagesApi messagesApi) {
+  public RequestErrorService(MessagesApi messagesApi, Config config) {
     this.messagesApi = messagesApi;
+    this.logFormExceptions = config.getBoolean("logFormExceptions");
   }
 
   /**
@@ -68,6 +71,10 @@ public final class RequestErrorService {
     final String errorMessage;
 
     if (e instanceof FormException) {
+      if (logFormExceptions) {
+        logger.error("", e);
+      }
+
       errorMessage =
           getErrorMessage(((FormException) e).getFormErrors(), messagesApi.preferred(request));
     } else {
