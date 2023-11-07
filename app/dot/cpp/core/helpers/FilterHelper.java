@@ -12,6 +12,7 @@ import dot.cpp.core.utils.BindableLocalDate;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.BiFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,6 +45,10 @@ public final class FilterHelper {
     return values.isEmpty() ? null : Filters.in(field, values);
   }
 
+  public static Filter lte(String field, String value) {
+    return getFilterOrNull(Filters::lte, field, value);
+  }
+
   public static Filter elemMatch(String field, Filter filter) {
     return filter == null ? null : Filters.elemMatch(field, filter);
   }
@@ -54,5 +59,10 @@ public final class FilterHelper {
 
   public static Expression localField(String fieldName) {
     return Expressions.field(String.format("$$%s", fieldName));
+  }
+
+  private static Filter getFilterOrNull(
+      BiFunction<String, String, Filter> filter, String field, String value) {
+    return isEmpty(value) ? null : filter.apply(field, value);
   }
 }

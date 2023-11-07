@@ -10,11 +10,9 @@ public final class Patterns {
 
   public static final String REQUIRED_NAME = "^([ \\u00c0-\\u01ffa-zA-Z'\\-])+$";
 
-  public static final String PHONE_NUMBER =
-      "^$|^\\+?\\(?\\d{1,3}\\)?[-\\s./\\d]{3,20}$";
+  public static final String PHONE_NUMBER = "^$|^\\+?\\(?\\d{1,3}\\)?[-\\s./\\d]{3,20}$";
 
-  public static final String REQUIRED_PHONE_NUMBER =
-      "^\\+?\\(?\\d{1,3}\\)?[-\\s./\\d]{3,20}$";
+  public static final String REQUIRED_PHONE_NUMBER = "^\\+?\\(?\\d{1,3}\\)?[-\\s./\\d]{3,20}$";
 
   public static final String EMAIL = "^$|^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,10}$";
 
