@@ -45,19 +45,19 @@ public final class FilterHelper {
     return values.isEmpty() ? null : Filters.in(field, values);
   }
 
-  public static Filter lte(String field, String value) {
+  public static Filter lte(String field, Object value) {
     return getFilterOrNull(Filters::lte, field, value);
   }
 
-  public static Filter lt(String field, String value) {
+  public static Filter lt(String field, Object value) {
     return getFilterOrNull(Filters::lt, field, value);
   }
 
-  public static Filter gte(String field, String value) {
+  public static Filter gte(String field, Object value) {
     return getFilterOrNull(Filters::gte, field, value);
   }
 
-  public static Filter gt(String field, String value) {
+  public static Filter gt(String field, Object value) {
     return getFilterOrNull(Filters::gt, field, value);
   }
 
@@ -74,6 +74,18 @@ public final class FilterHelper {
   }
 
   private static Filter getFilterOrNull(
+      BiFunction<String, Object, Filter> filter, String field, Object value) {
+    return value instanceof String
+        ? getStringFilterOrNull(filter::apply, field, (String) value)
+        : getObjectFilterOrNull(filter, field, value);
+  }
+
+  private static Filter getObjectFilterOrNull(
+      BiFunction<String, Object, Filter> filter, String field, Object value) {
+    return value == null ? null : filter.apply(field, value);
+  }
+
+  private static Filter getStringFilterOrNull(
       BiFunction<String, String, Filter> filter, String field, String value) {
     return isEmpty(value) ? null : filter.apply(field, value);
   }
