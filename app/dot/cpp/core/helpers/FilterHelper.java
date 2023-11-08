@@ -49,6 +49,18 @@ public final class FilterHelper {
     return getFilterOrNull(Filters::lte, field, value);
   }
 
+  public static Filter lt(String field, String value) {
+    return getFilterOrNull(Filters::lt, field, value);
+  }
+
+  public static Filter gte(String field, String value) {
+    return getFilterOrNull(Filters::gte, field, value);
+  }
+
+  public static Filter gt(String field, String value) {
+    return getFilterOrNull(Filters::gt, field, value);
+  }
+
   public static Filter elemMatch(String field, Filter filter) {
     return filter == null ? null : Filters.elemMatch(field, filter);
   }
