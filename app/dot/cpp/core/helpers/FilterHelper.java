@@ -41,6 +41,10 @@ public final class FilterHelper {
     return isEmpty(value) ? null : Filters.regex(fieldName).pattern("(?i).*" + value + ".*");
   }
 
+  public static Filter eq(String field, List<String> values) {
+    return values.isEmpty() ? null : Filters.eq(field, values);
+  }
+
   public static Filter in(String field, List<String> values) {
     return values.isEmpty() ? null : Filters.in(field, values);
   }
@@ -57,7 +61,7 @@ public final class FilterHelper {
     return getFilterOrNull(Filters::gte, field, value);
   }
 
-  public static Filter gt(String field, Object value) {
+  public static Filter gt(String field, Objects value) {
     return getFilterOrNull(Filters::gt, field, value);
   }
 
