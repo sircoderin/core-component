@@ -61,7 +61,7 @@ public final class FilterHelper {
     return getFilterOrNull(Filters::gte, field, value);
   }
 
-  public static Filter gt(String field, Objects value) {
+  public static Filter gt(String field, Object value) {
     return getFilterOrNull(Filters::gt, field, value);
   }
 
