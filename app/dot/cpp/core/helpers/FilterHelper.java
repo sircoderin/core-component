@@ -41,12 +41,16 @@ public final class FilterHelper {
     return isEmpty(value) ? null : Filters.regex(fieldName).pattern("(?i).*" + value + ".*");
   }
 
-  public static Filter eq(String field, List<String> values) {
-    return values.isEmpty() ? null : Filters.eq(field, values);
-  }
-
   public static Filter in(String field, List<String> values) {
     return values.isEmpty() ? null : Filters.in(field, values);
+  }
+
+  public static Filter eq(String field, String value) {
+    return getFilterOrNull(Filters::eq, field, value);
+  }
+
+  public static Filter ne(String field, String value) {
+    return getFilterOrNull(Filters::ne, field, value);
   }
 
   public static Filter lte(String field, Object value) {
