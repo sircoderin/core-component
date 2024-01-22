@@ -33,13 +33,25 @@ import play.mvc.Result;
 
 public class AuthenticationAction extends Action<Authentication> {
 
-  private static final String USER_COLLECTION = "User";
   private final Logger logger = LoggerFactory.getLogger(getClass());
+  private final Object lock = new Object();
 
-  @Inject private MessagesApi languageService;
-  @Inject private LoginService loginService;
-  @Inject private RepositoryService repositoryService;
-  @Inject private Config config;
+  private final MessagesApi languageService;
+  private final LoginService loginService;
+  private final RepositoryService repositoryService;
+  private final Config config;
+
+  @Inject
+  public AuthenticationAction(
+      MessagesApi languageService,
+      LoginService loginService,
+      RepositoryService repositoryService,
+      Config config) {
+    this.languageService = languageService;
+    this.loginService = loginService;
+    this.repositoryService = repositoryService;
+    this.config = config;
+  }
 
   public void setConfiguration(Authentication authenticationConfig) {
     this.configuration = authenticationConfig;
@@ -48,43 +60,45 @@ public class AuthenticationAction extends Action<Authentication> {
   @Override
   public CompletionStage<Result> call(Request request) {
 
-    if (!databaseInitialized()) {
+    if (!repositoryService.isDatabaseInitialized()) {
       return delegate.call(request);
     }
 
-    final var messages = languageService.preferred(request);
-    final var accessToken = CookieHelper.getCookieString(request, ACCESS_TOKEN);
-    final var refreshToken = CookieHelper.getCookieString(request, REFRESH_TOKEN);
-    final var authHeader = request.header(Http.HeaderNames.AUTHORIZATION).orElse("");
-    final var clientIp = request.header(Http.HeaderNames.X_FORWARDED_FOR).orElse("");
+    synchronized (lock) {
+      final var messages = languageService.preferred(request);
+      final var accessToken = CookieHelper.getCookieString(request, ACCESS_TOKEN);
+      final var refreshToken = CookieHelper.getCookieString(request, REFRESH_TOKEN);
+      final var authHeader = request.header(Http.HeaderNames.AUTHORIZATION).orElse("");
+      final var clientIp = request.header(Http.HeaderNames.X_FORWARDED_FOR).orElse("");
 
-    logger.debug("Authentication");
-    logger.debug("request: {}", request);
-    logger.debug("authHeader: {}", authHeader);
-    logger.debug("accessToken: {}", accessToken);
-    logger.debug("refreshToken: {}", refreshToken);
+      logger.debug("Authentication");
+      logger.debug("request: {}", request);
+      logger.debug("authHeader: {}", authHeader);
+      logger.debug("accessToken: {}", accessToken);
+      logger.debug("refreshToken: {}", refreshToken);
 
-    final var constructedAccessToken = constructToken(authHeader, accessToken);
-    if (isEmpty(constructedAccessToken) || isInvalidJwt(constructedAccessToken)) {
-      logger.warn("Token invalid {} for client with ip {}", constructedAccessToken, clientIp);
-      return statusIfPresentOrResult(redirectWithError(messages));
-    }
-    logger.debug("{}", constructedAccessToken);
-
-    try {
-      final var user = loginService.authorizeRequest(accessToken, getConfigUserRoles());
-      return delegate.call(request.addAttr(Constants.USER, user));
-    } catch (LoginException loginEx) {
-      logger.debug("{}", loginEx.getMessage());
+      final var constructedAccessToken = constructToken(authHeader, accessToken);
+      if (isEmpty(constructedAccessToken) || isInvalidJwt(constructedAccessToken)) {
+        logger.warn("Token invalid {} for client with ip {}", constructedAccessToken, clientIp);
+        return statusIfPresentOrResult(redirectWithError(messages));
+      }
+      logger.debug("{}", constructedAccessToken);
 
       try {
-        final var tokens = loginService.refreshTokens(refreshToken);
-        final var user =
-            loginService.authorizeRequest(
-                tokens.get(ACCESS_TOKEN).getAsString(), getConfigUserRoles());
-        return getSuccessfulResult(request, user, tokens);
-      } catch (BaseException exception) {
-        return getCompletableFutureResultOnError(messages, exception);
+        final var user = loginService.authorizeRequest(accessToken, getConfigUserRoles());
+        return delegate.call(request.addAttr(Constants.USER, user));
+      } catch (LoginException loginEx) {
+        logger.debug("{}", loginEx.getMessage());
+
+        try {
+          final var tokens = loginService.refreshTokens(refreshToken);
+          final var user =
+              loginService.authorizeRequest(
+                  tokens.get(ACCESS_TOKEN).getAsString(), getConfigUserRoles());
+          return getSuccessfulResult(request, user, tokens);
+        } catch (BaseException exception) {
+          return getCompletableFutureResultOnError(messages, exception);
+        }
       }
     }
   }
@@ -138,9 +152,5 @@ public class AuthenticationAction extends Action<Authentication> {
 
   private boolean isEmpty(String string) {
     return string == null || string.isBlank();
-  }
-
-  private boolean databaseInitialized() {
-    return repositoryService.isCollectionInDatabase(USER_COLLECTION);
   }
 }
