@@ -1,7 +1,5 @@
 package dot.cpp.core.services;
 
-import com.google.gson.JsonObject;
-import dot.cpp.core.constants.Constants;
 import dot.cpp.core.enums.ErrorCodes;
 import dot.cpp.core.enums.UserRole;
 import dot.cpp.core.exceptions.BaseException;

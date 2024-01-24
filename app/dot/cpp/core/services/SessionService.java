@@ -3,9 +3,6 @@ package dot.cpp.core.services;
 import static dot.cpp.core.constants.Constants.ACCESS_TOKEN;
 import static dot.cpp.core.constants.Constants.REFRESH_TOKEN;
 
-import com.google.gson.JsonObject;
-import java.util.Optional;
-import java.util.concurrent.CompletionStage;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import play.cache.AsyncCacheApi;
