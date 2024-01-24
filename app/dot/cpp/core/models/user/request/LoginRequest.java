@@ -11,7 +11,7 @@ public class LoginRequest {
   private String password;
 
   @NotBlank(message = "constraints.field.invalid")
-  @Pattern(value = Patterns.NAME_OR_EMAIL, message = "constraints.field.invalid")
+  @Pattern(value = Patterns.USERNAME, message = "constraints.field.invalid")
   private String username;
 
   @Override

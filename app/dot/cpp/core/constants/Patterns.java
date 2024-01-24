@@ -16,8 +16,7 @@ public final class Patterns {
 
   public static final String EMAIL = "^$|^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,10}$";
 
-  public static final String NAME_OR_EMAIL =
-      "^([ \\u00c0-\\u01ffa-zA-Z'\\-])+$|^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,10}$";
+  public static final String USERNAME = "^[A-Za-z0-9]{1,50}$";
 
   public static final String REQUIRED_EMAIL = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,10}$";
 

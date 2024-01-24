@@ -24,6 +24,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import play.libs.F;
 
 @Singleton
 public class LoginService {
@@ -44,7 +45,15 @@ public class LoginService {
     key = Keys.secretKeyFor(SignatureAlgorithm.HS512);
   }
 
-  public JsonObject login(String userName, String password) throws LoginException {
+  /**
+   * Login a user and return an access and refresh token.
+   *
+   * @param userName the username of the user
+   * @param password the password of the user
+   * @return a tuple containing the access(_1) and refresh(_2) tokens
+   * @throws LoginException if the login is unsuccessful
+   */
+  public F.Tuple<String, String> login(String userName, String password) throws LoginException {
     final var user = userRepository.findByField("userName", userName);
 
     if (user == null) {
@@ -69,10 +78,7 @@ public class LoginService {
       sessionRepository.save(session);
       logger.debug("{}", session);
 
-      final var tokens = new JsonObject();
-      tokens.addProperty(Constants.ACCESS_TOKEN, accessToken);
-      tokens.addProperty(Constants.REFRESH_TOKEN, refreshToken);
-
+      final var tokens = new F.Tuple<>(accessToken, refreshToken);
       logger.debug("{}", tokens);
 
       return tokens;
@@ -137,7 +143,14 @@ public class LoginService {
     }
   }
 
-  public JsonObject refreshTokens(String refreshToken) throws LoginException {
+  /**
+   * Refreshes the access and refresh tokens for a user.
+   *
+   * @param refreshToken the refresh token of the user
+   * @return a tuple containing the new access(_1) and refresh(_2) tokens
+   * @throws LoginException if the refresh token is invalid or expired
+   */
+  public F.Tuple<String, String> refreshTokens(String refreshToken) throws LoginException {
     final Session session = sessionRepository.findByField("refreshToken", refreshToken);
     if (session == null) {
       throw LoginException.from(ErrorCodes.SESSION_NOT_FOUND);
@@ -156,16 +169,12 @@ public class LoginService {
     session.setRefreshExpiryDate(expirationDateRefresh.getTime());
     session.setRefreshToken(newRefreshToken);
     sessionRepository.save(session);
-
     logger.debug("after refresh {}", session);
 
-    final String accessToken = getAccessToken(session.getUserId());
-
-    final JsonObject tokens = new JsonObject();
-    tokens.addProperty(Constants.ACCESS_TOKEN, accessToken);
-    tokens.addProperty(Constants.REFRESH_TOKEN, newRefreshToken);
-
+    final var newAccessToken = getAccessToken(session.getUserId());
+    final var tokens = new F.Tuple<>(newAccessToken, newRefreshToken);
     logger.debug("refreshed tokens {}", tokens);
+
     return tokens;
   }
 

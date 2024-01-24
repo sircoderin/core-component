@@ -9,6 +9,7 @@ scalaVersion := "2.13.10"
 
 libraryDependencies ++= Seq(
   guice,
+  caffeine,
   "dot.cpp" %% "repository-component" % "1.0",
   "com.typesafe.play" %% "play-mailer" % "8.0.1",
   "com.typesafe.play" %% "play-mailer-guice" % "8.0.1",
