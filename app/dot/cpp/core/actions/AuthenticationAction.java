@@ -114,7 +114,7 @@ public class AuthenticationAction extends Action<Authentication> {
         final var tokens = loginService.refreshTokens(refreshToken);
         final var newAccessToken = tokens._1;
         final var newRefreshToken = tokens._2;
-        logger.info("new tokens {}", tokens);
+        logger.debug("new tokens {}", tokens);
 
         final var user = loginService.authorizeRequest(newAccessToken, getConfigUserRoles());
         sessionService.addTokensToCache(sessionId, newAccessToken, newRefreshToken);
