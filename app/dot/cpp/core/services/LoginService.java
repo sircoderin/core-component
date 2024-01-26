@@ -4,6 +4,7 @@ import dot.cpp.core.enums.ErrorCodes;
 import dot.cpp.core.enums.UserRole;
 import dot.cpp.core.exceptions.BaseException;
 import dot.cpp.core.exceptions.LoginException;
+import dot.cpp.core.models.Tokens;
 import dot.cpp.core.models.session.entity.Session;
 import dot.cpp.core.models.session.repository.SessionRepository;
 import dot.cpp.core.models.user.entity.User;
@@ -14,22 +15,27 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.locks.ReentrantLock;
 import javax.crypto.SecretKey;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import play.libs.F;
 
 @Singleton
 public class LoginService {
 
+  public static final long REFRESH_TIME = 86400000L; // one day in milliseconds
+  public static final long ACCESS_TIME = 600000L; // 10 minutes in milliseconds
+
+  public final UserService userService;
   private final SecretKey key;
   private final Logger logger = LoggerFactory.getLogger(getClass());
-  public final UserService userService;
+  private final ReentrantLock[] locks = new ReentrantLock[10];
   private final UserRepository userRepository;
   private final SessionRepository sessionRepository;
 
@@ -40,52 +46,49 @@ public class LoginService {
     this.userRepository = userRepository;
     this.sessionRepository = sessionRepository;
 
+    Arrays.setAll(locks, index -> new ReentrantLock());
     key = Keys.secretKeyFor(SignatureAlgorithm.HS512);
   }
 
   /**
-   * Login a user and return an access and refresh token.
+   * Login user and return access and refresh tokens.
    *
-   * @param userName the username of the user
+   * @param username the username of the user
    * @param password the password of the user
-   * @return a tuple containing the access(_1) and refresh(_2) tokens
+   * @return a Tokens object containing the access and refresh tokens
    * @throws LoginException if the login is unsuccessful
    */
-  public F.Tuple<String, String> login(String userName, String password) throws LoginException {
-    final var user = userRepository.findByField("userName", userName);
+  public Tokens login(String username, String password) throws LoginException {
+    final var user = userRepository.findByField("userName", username);
 
     if (user == null) {
-      logger.debug("User not found {}", userName);
+      logger.debug("User not found {}", username);
       throw LoginException.from(ErrorCodes.USER_NOT_FOUND);
     } else {
       if (!userService.passwordIsValid(user.getPassword(), password)) {
-        logger.debug("Failed authentication by {}", userName);
+        logger.debug("Failed authentication by {}", username);
         throw LoginException.from(ErrorCodes.INCORRECT_PASSWORD);
       }
 
       final var expirationDateRefresh = new Date();
-      expirationDateRefresh.setTime(expirationDateRefresh.getTime() + 86400000L); // one day
+      expirationDateRefresh.setTime(expirationDateRefresh.getTime() + REFRESH_TIME);
 
       final var session = new Session();
-      final var accessToken = getAccessToken(user.getRecordId());
       final var refreshToken = UUID.randomUUID().toString();
       session.setRefreshToken(refreshToken);
-      session.setRefreshExpiryDate(expirationDateRefresh.getTime());
+      session.setRefreshExpiryTime(expirationDateRefresh.getTime());
       session.setCreateTime(Instant.now().toEpochMilli());
       session.setUserId(user.getRecordId());
       sessionRepository.save(session);
       logger.debug("{}", session);
 
-      final var tokens = new F.Tuple<>(accessToken, refreshToken);
-      logger.debug("{}", tokens);
-
-      return tokens;
+      return getTokens(session);
     }
   }
 
   private String getAccessToken(String userId) {
     final var expirationDateAccess = new Date();
-    expirationDateAccess.setTime(expirationDateAccess.getTime() + 600000L); // 10 minutes
+    expirationDateAccess.setTime(expirationDateAccess.getTime() + ACCESS_TIME);
 
     String jws =
         Jwts.builder()
@@ -145,34 +148,54 @@ public class LoginService {
    * Refreshes the access and refresh tokens for a user.
    *
    * @param refreshToken the refresh token of the user
-   * @return a tuple containing the new access(_1) and refresh(_2) tokens
+   * @return a Tokens object containing the new access and refresh tokens
    * @throws LoginException if the refresh token is invalid or expired
    */
-  public F.Tuple<String, String> refreshTokens(String refreshToken) throws LoginException {
-    final Session session = sessionRepository.findByField("refreshToken", refreshToken);
-    if (session == null) {
-      throw LoginException.from(ErrorCodes.SESSION_NOT_FOUND);
+  public Tokens refreshTokens(String refreshToken) throws LoginException {
+    final var lockIndex = Math.abs(refreshToken.hashCode() % 10);
+
+    locks[lockIndex].lock();
+    try {
+      final Session session = sessionRepository.findByField("refreshToken", refreshToken);
+
+      if (session == null) {
+        final var refreshedSession = sessionRepository.findByField("oldRefreshToken", refreshToken);
+
+        if (refreshedSession.getRefreshExpiryTime()
+            > new Date().getTime() + REFRESH_TIME - 10000L) {
+          return getTokens(refreshedSession);
+        }
+
+        throw LoginException.from(ErrorCodes.SESSION_NOT_FOUND);
+      }
+
+      logger.debug("before refresh {}", session);
+
+      if (session.getRefreshExpiryTime() < new Date().getTime()) {
+        throw LoginException.from(ErrorCodes.EXPIRED_REFRESH);
+      }
+
+      Date expirationDateRefresh = new Date();
+      expirationDateRefresh.setTime(expirationDateRefresh.getTime() + REFRESH_TIME);
+      final String newRefreshToken = UUID.randomUUID().toString();
+
+      session.setRefreshExpiryTime(expirationDateRefresh.getTime());
+      session.setRefreshToken(newRefreshToken);
+      session.setOldRefreshToken(refreshToken);
+      sessionRepository.save(session);
+
+      logger.debug("after refresh {}", session);
+
+      return getTokens(session);
+    } finally {
+      locks[lockIndex].unlock();
     }
+  }
 
-    logger.debug("before refresh {}", session);
-
-    if (session.getRefreshExpiryDate() < new Date().getTime()) {
-      throw LoginException.from(ErrorCodes.EXPIRED_REFRESH);
-    }
-
-    Date expirationDateRefresh = new Date();
-    expirationDateRefresh.setTime(expirationDateRefresh.getTime() + 86400000L); // one day
-    final String newRefreshToken = UUID.randomUUID().toString();
-
-    session.setRefreshExpiryDate(expirationDateRefresh.getTime());
-    session.setRefreshToken(newRefreshToken);
-    sessionRepository.save(session);
-    logger.debug("after refresh {}", session);
-
-    final var newAccessToken = getAccessToken(session.getUserId());
-    final var tokens = new F.Tuple<>(newAccessToken, newRefreshToken);
+  private Tokens getTokens(Session session) {
+    final var accessToken = getAccessToken(session.getUserId());
+    final var tokens = new Tokens(accessToken, session.getRefreshToken());
     logger.debug("refreshed tokens {}", tokens);
-
     return tokens;
   }
 

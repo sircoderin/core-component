@@ -1,14 +1,13 @@
 package dot.cpp.core.helpers;
 
-import com.google.gson.JsonObject;
 import dot.cpp.core.constants.Constants;
 import play.mvc.Http;
 import play.mvc.Result;
 
 public class CookieHelper {
 
-  public static Http.Cookie getCookie(String cookieName, JsonObject tokens, boolean isSecure) {
-    return Http.Cookie.builder(cookieName, tokens.get(cookieName).getAsString())
+  public static Http.Cookie getCookie(String cookieName, String cookieValue, boolean isSecure) {
+    return Http.Cookie.builder(cookieName, cookieValue)
         .withHttpOnly(true)
         .withSecure(isSecure)
         .build();
@@ -35,4 +34,6 @@ public class CookieHelper {
 
     return cookie.value();
   }
+
+  private CookieHelper() {}
 }

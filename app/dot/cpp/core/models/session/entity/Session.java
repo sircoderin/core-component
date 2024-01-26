@@ -5,16 +5,16 @@ import dev.morphia.annotations.Entity;
 import dev.morphia.annotations.Transient;
 import dot.cpp.repository.models.BaseEntity;
 import play.libs.Json;
-import play.mvc.Http;
 import play.mvc.Http.Cookie;
 
 @Entity("Session")
 public class Session extends BaseEntity {
 
   private String userId;
-  private Long refreshExpiryDate;
   private String accessToken;
   private String refreshToken;
+  private Long refreshExpiryTime;
+  private String oldRefreshToken;
   private Long createTime;
 
   @Transient @JsonIgnore private Cookie cookie;
@@ -25,7 +25,7 @@ public class Session extends BaseEntity {
    * @return boolean
    */
   public boolean performedLogout() {
-    return refreshExpiryDate == null || refreshExpiryDate == 0;
+    return refreshExpiryTime == null || refreshExpiryTime == 0;
   }
 
   @Override
@@ -57,19 +57,27 @@ public class Session extends BaseEntity {
     this.refreshToken = refreshToken;
   }
 
+  public Long getRefreshExpiryTime() {
+    return refreshExpiryTime;
+  }
+
+  public void setRefreshExpiryTime(Long refreshExpiryTime) {
+    this.refreshExpiryTime = refreshExpiryTime;
+  }
+
+  public String getOldRefreshToken() {
+    return oldRefreshToken;
+  }
+
+  public void setOldRefreshToken(String oldRefreshToken) {
+    this.oldRefreshToken = oldRefreshToken;
+  }
+
   public Long getCreateTime() {
     return createTime;
   }
 
   public void setCreateTime(Long createTime) {
     this.createTime = createTime;
-  }
-
-  public Long getRefreshExpiryDate() {
-    return refreshExpiryDate;
-  }
-
-  public void setRefreshExpiryDate(Long refreshExpiryDate) {
-    this.refreshExpiryDate = refreshExpiryDate;
   }
 }
