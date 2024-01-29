@@ -4,7 +4,7 @@ import dot.cpp.core.enums.ErrorCodes;
 import dot.cpp.core.enums.UserRole;
 import dot.cpp.core.exceptions.BaseException;
 import dot.cpp.core.exceptions.LoginException;
-import dot.cpp.core.models.Tokens;
+import dot.cpp.core.models.AuthTokens;
 import dot.cpp.core.models.session.entity.Session;
 import dot.cpp.core.models.session.repository.SessionRepository;
 import dot.cpp.core.models.user.entity.User;
@@ -58,7 +58,7 @@ public class LoginService {
    * @return a Tokens object containing the access and refresh tokens
    * @throws LoginException if the login is unsuccessful
    */
-  public Tokens login(String username, String password) throws LoginException {
+  public AuthTokens login(String username, String password) throws LoginException {
     final var user = userRepository.findByField("userName", username);
 
     if (user == null) {
@@ -151,7 +151,7 @@ public class LoginService {
    * @return a Tokens object containing the new access and refresh tokens
    * @throws LoginException if the refresh token is invalid or expired
    */
-  public Tokens refreshTokens(String refreshToken) throws LoginException {
+  public AuthTokens refreshTokens(String refreshToken) throws LoginException {
     final var lockIndex = Math.abs(refreshToken.hashCode() % 10);
 
     locks[lockIndex].lock();
@@ -192,9 +192,9 @@ public class LoginService {
     }
   }
 
-  private Tokens getTokens(Session session) {
+  private AuthTokens getTokens(Session session) {
     final var accessToken = getAccessToken(session.getUserId());
-    final var tokens = new Tokens(accessToken, session.getRefreshToken());
+    final var tokens = new AuthTokens(accessToken, session.getRefreshToken());
     logger.debug("refreshed tokens {}", tokens);
     return tokens;
   }

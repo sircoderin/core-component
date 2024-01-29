@@ -14,7 +14,7 @@ import dot.cpp.core.enums.UserRole;
 import dot.cpp.core.exceptions.BaseException;
 import dot.cpp.core.exceptions.LoginException;
 import dot.cpp.core.helpers.CookieHelper;
-import dot.cpp.core.models.Tokens;
+import dot.cpp.core.models.AuthTokens;
 import dot.cpp.core.models.user.entity.User;
 import dot.cpp.core.services.LoginService;
 import dot.cpp.repository.services.RepositoryService;
@@ -112,7 +112,7 @@ public class AuthenticationAction extends Action<Authentication> {
     return Arrays.stream(configuration.userRoles()).collect(Collectors.toList());
   }
 
-  private CompletionStage<Result> getSuccessfulResult(Request request, User user, Tokens tokens) {
+  private CompletionStage<Result> getSuccessfulResult(Request request, User user, AuthTokens tokens) {
     final var isSecure = config.getBoolean("play.http.session.secure");
     return delegate
         .call(request.addAttr(Constants.USER, user))
