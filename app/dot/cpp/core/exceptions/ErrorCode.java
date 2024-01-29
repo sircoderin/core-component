@@ -48,6 +48,6 @@ public class ErrorCode {
 
   @Override
   public String toString() {
-    return Json.toJson(this).toString();
+    return Json.stringify(Json.toJson(this));
   }
 }
