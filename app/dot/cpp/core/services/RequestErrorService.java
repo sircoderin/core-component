@@ -3,6 +3,7 @@ package dot.cpp.core.services;
 import static play.mvc.Results.redirect;
 
 import com.typesafe.config.Config;
+import dot.cpp.core.exceptions.BaseException;
 import dot.cpp.core.exceptions.FormException;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -77,6 +78,10 @@ public final class RequestErrorService {
 
       errorMessage =
           getErrorMessage(((FormException) e).getFormErrors(), messagesApi.preferred(request));
+    } else if (e instanceof BaseException) {
+      logger.error("", e);
+      errorMessage =
+          messagesApi.preferred(request).apply(((BaseException) e).getErrorCode().getMessage());
     } else {
       logger.error("", e);
       errorMessage = messagesApi.preferred(request).apply(e.getMessage());
