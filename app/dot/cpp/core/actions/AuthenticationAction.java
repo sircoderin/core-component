@@ -117,7 +117,7 @@ public class AuthenticationAction extends Action<Authentication> {
 
     logger.debug("Session expired");
     return CompletableFuture.completedFuture(
-        redirect(configuration.redirectUrl())
+        CookieHelper.discardAuthorizationCookies(redirect(configuration.redirectUrl()))
             .flashing("alert-danger", messages.apply("general.session.expired")));
   }
 }
