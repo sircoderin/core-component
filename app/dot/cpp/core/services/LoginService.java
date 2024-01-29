@@ -234,7 +234,7 @@ public class LoginService {
   private void validateSessionIp(String clientIp, Session session) throws LoginException {
     if (!session.getClientIp().equals(clientIp)) {
       logger.error("Client IP {} different from session IP {}", clientIp, session.getClientIp());
-      throw LoginException.from(ErrorCodes.IP_NOT_FOUND);
+      throw LoginException.from(ErrorCodes.IP_INVALID);
     }
   }
 

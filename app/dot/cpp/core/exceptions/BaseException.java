@@ -7,7 +7,7 @@ public class BaseException extends Exception {
   private final transient ErrorCode errorCode;
 
   public BaseException(ErrorCode errorCode) {
-    super(errorCode.getMessage());
+    super(errorCode.toString());
     this.errorCode = errorCode;
   }
 

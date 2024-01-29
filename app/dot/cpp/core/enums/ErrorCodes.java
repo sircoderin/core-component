@@ -15,7 +15,8 @@ public enum ErrorCodes {
   FORM_VALIDATION_FAILED(ErrorCode.from(1009, "form.validation.errors")),
   GENERAL_ERROR(ErrorCode.from(1010, "general.application.error")),
   MISSING_REFRESH_TOKEN(ErrorCode.from(1011, "missing.refresh.token")),
-  IP_NOT_FOUND(ErrorCode.from(1012, "ip.not.found"));
+  IP_NOT_FOUND(ErrorCode.from(1012, "ip.not.found")),
+  IP_INVALID(ErrorCode.from(1013, "ip.invalid"));
 
   final ErrorCode code;
 
