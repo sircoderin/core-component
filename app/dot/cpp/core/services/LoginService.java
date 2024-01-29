@@ -1,5 +1,7 @@
 package dot.cpp.core.services;
 
+import static dot.cpp.core.helpers.ValidationHelper.isEmpty;
+
 import dot.cpp.core.enums.ErrorCodes;
 import dot.cpp.core.enums.UserRole;
 import dot.cpp.core.exceptions.BaseException;
@@ -25,6 +27,8 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import play.Environment;
+import play.mvc.Http;
 
 @Singleton
 public class LoginService {
@@ -38,13 +42,18 @@ public class LoginService {
   private final ReentrantLock[] locks = new ReentrantLock[10];
   private final UserRepository userRepository;
   private final SessionRepository sessionRepository;
+  private final Environment environment;
 
   @Inject
   public LoginService(
-      UserService userService, UserRepository userRepository, SessionRepository sessionRepository) {
+      UserService userService,
+      UserRepository userRepository,
+      SessionRepository sessionRepository,
+      Environment environment) {
     this.userService = userService;
     this.userRepository = userRepository;
     this.sessionRepository = sessionRepository;
+    this.environment = environment;
 
     Arrays.setAll(locks, index -> new ReentrantLock());
     key = Keys.secretKeyFor(SignatureAlgorithm.HS512);
@@ -53,12 +62,15 @@ public class LoginService {
   /**
    * Login user and return access and refresh tokens.
    *
+   * @param request the HTTP request
    * @param username the username of the user
    * @param password the password of the user
    * @return a Tokens object containing the access and refresh tokens
    * @throws LoginException if the login is unsuccessful
    */
-  public AuthTokens login(String username, String password) throws LoginException {
+  public AuthTokens login(Http.Request request, String username, String password)
+      throws LoginException {
+    final var clientIp = getClientIp(request);
     final var user = userRepository.findByField("userName", username);
 
     if (user == null) {
@@ -79,11 +91,31 @@ public class LoginService {
       session.setRefreshExpiryTime(expirationDateRefresh.getTime());
       session.setCreateTime(Instant.now().toEpochMilli());
       session.setUserId(user.getRecordId());
+      session.setClientIp(clientIp);
       sessionRepository.save(session);
       logger.debug("{}", session);
 
       return getTokens(session);
     }
+  }
+
+  public String getClientIp(Http.Request request) throws LoginException {
+    final String clientIp;
+
+    if (environment.isDev()) {
+      clientIp = request.remoteAddress();
+
+      if (isEmpty(clientIp)) {
+        throw LoginException.from(ErrorCodes.IP_NOT_FOUND);
+      }
+    } else {
+      clientIp =
+          request
+              .header(Http.HeaderNames.X_FORWARDED_FOR)
+              .orElseThrow(() -> LoginException.from(ErrorCodes.IP_NOT_FOUND));
+    }
+
+    return clientIp;
   }
 
   private String getAccessToken(String userId) {
@@ -148,26 +180,33 @@ public class LoginService {
    * Refreshes the access and refresh tokens for a user.
    *
    * @param refreshToken the refresh token of the user
+   * @param clientIp the IP of the client
    * @return a Tokens object containing the new access and refresh tokens
    * @throws LoginException if the refresh token is invalid or expired
    */
-  public AuthTokens refreshTokens(String refreshToken) throws LoginException {
+  public AuthTokens refreshTokens(String refreshToken, String clientIp) throws LoginException {
     final var lockIndex = Math.abs(refreshToken.hashCode() % 10);
 
     locks[lockIndex].lock();
     try {
-      final Session session = sessionRepository.findByField("refreshToken", refreshToken);
+      final var session = sessionRepository.findByField("refreshToken", refreshToken);
 
       if (session == null) {
         final var refreshedSession = sessionRepository.findByField("oldRefreshToken", refreshToken);
 
-        if (refreshedSession.getRefreshExpiryTime()
-            > new Date().getTime() + REFRESH_TIME - 10000L) {
-          return getTokens(refreshedSession);
+        if (refreshedSession != null) {
+          validateSessionIp(clientIp, refreshedSession);
+
+          if (refreshedSession.getRefreshExpiryTime()
+              > new Date().getTime() + REFRESH_TIME - 10000L) {
+            return getTokens(refreshedSession);
+          }
         }
 
         throw LoginException.from(ErrorCodes.SESSION_NOT_FOUND);
       }
+
+      validateSessionIp(clientIp, session);
 
       logger.debug("before refresh {}", session);
 
@@ -189,6 +228,13 @@ public class LoginService {
       return getTokens(session);
     } finally {
       locks[lockIndex].unlock();
+    }
+  }
+
+  private void validateSessionIp(String clientIp, Session session) throws LoginException {
+    if (!session.getClientIp().equals(clientIp)) {
+      logger.error("Client IP {} different from session IP {}", clientIp, session.getClientIp());
+      throw LoginException.from(ErrorCodes.IP_NOT_FOUND);
     }
   }
 

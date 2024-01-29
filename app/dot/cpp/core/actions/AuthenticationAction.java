@@ -8,7 +8,6 @@ import static dot.cpp.core.helpers.ValidationHelper.isEmpty;
 import com.typesafe.config.Config;
 import dot.cpp.core.annotations.Authentication;
 import dot.cpp.core.constants.Constants;
-import dot.cpp.core.constants.Patterns;
 import dot.cpp.core.enums.ErrorCodes;
 import dot.cpp.core.enums.UserRole;
 import dot.cpp.core.exceptions.BaseException;
@@ -59,9 +58,6 @@ public class AuthenticationAction extends Action<Authentication> {
 
   @Override
   public CompletionStage<Result> call(Request request) {
-
-    logger.debug("request: {}", request);
-
     if (!repositoryService.isDatabaseInitialized()) {
       return delegate.call(request);
     }
@@ -69,22 +65,10 @@ public class AuthenticationAction extends Action<Authentication> {
     final var messages = languageService.preferred(request);
     final var accessToken = CookieHelper.getCookieString(request, ACCESS_TOKEN);
     final var refreshToken = CookieHelper.getCookieString(request, REFRESH_TOKEN);
-    final var authHeader = request.header(Http.HeaderNames.AUTHORIZATION).orElse("");
-    final var clientIp = request.header(Http.HeaderNames.X_FORWARDED_FOR).orElse("");
 
-    logger.debug("Authentication");
     logger.debug("request: {}", request);
-    logger.debug("authHeader: {}", authHeader);
     logger.debug("accessToken: {}", accessToken);
     logger.debug("refreshToken: {}", refreshToken);
-
-    final var constructedAccessToken = constructToken(authHeader, accessToken);
-    logger.debug("{}", constructedAccessToken);
-
-    if (isEmpty(constructedAccessToken) || isInvalidJwt(constructedAccessToken)) {
-      logger.warn("Token invalid {} for client with ip {}", constructedAccessToken, clientIp);
-      return getLogoutRedirect(messages);
-    }
 
     try {
       final var user = loginService.authorizeRequest(accessToken, getConfigUserRoles());
@@ -97,7 +81,8 @@ public class AuthenticationAction extends Action<Authentication> {
           throw LoginException.from(ErrorCodes.MISSING_REFRESH_TOKEN);
         }
 
-        final var tokens = loginService.refreshTokens(refreshToken);
+        final var clientIp = loginService.getClientIp(request);
+        final var tokens = loginService.refreshTokens(refreshToken, clientIp);
         final var user = loginService.authorizeRequest(tokens.accessToken, getConfigUserRoles());
 
         return getSuccessfulResult(request, user, tokens);
@@ -112,26 +97,16 @@ public class AuthenticationAction extends Action<Authentication> {
     return Arrays.stream(configuration.userRoles()).collect(Collectors.toList());
   }
 
-  private CompletionStage<Result> getSuccessfulResult(Request request, User user, AuthTokens tokens) {
+  private CompletionStage<Result> getSuccessfulResult(
+      Request request, User user, AuthTokens authTokens) {
     final var isSecure = config.getBoolean("play.http.session.secure");
     return delegate
         .call(request.addAttr(Constants.USER, user))
         .thenApply(
             result ->
                 result.withCookies(
-                    getCookie(ACCESS_TOKEN, tokens.accessToken, isSecure),
-                    getCookie(REFRESH_TOKEN, tokens.refreshToken, isSecure)));
-  }
-
-  private String constructToken(
-      final String headerAuthorization, final String cookieAuthorization) {
-    return isEmpty(headerAuthorization)
-        ? cookieAuthorization
-        : headerAuthorization.replace("Bearer", "").trim();
-  }
-
-  private boolean isInvalidJwt(String token) {
-    return !token.matches(Patterns.JWT_TOKEN);
+                    getCookie(ACCESS_TOKEN, authTokens.accessToken, isSecure),
+                    getCookie(REFRESH_TOKEN, authTokens.refreshToken, isSecure)));
   }
 
   private CompletableFuture<Result> getLogoutRedirect(Messages messages) {

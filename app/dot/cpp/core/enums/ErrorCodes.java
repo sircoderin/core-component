@@ -14,7 +14,8 @@ public enum ErrorCodes {
   INVALID_JWT(ErrorCode.from(1008, "invalid.jwt")),
   FORM_VALIDATION_FAILED(ErrorCode.from(1009, "form.validation.errors")),
   GENERAL_ERROR(ErrorCode.from(1010, "general.application.error")),
-  MISSING_REFRESH_TOKEN(ErrorCode.from(1011, "missing.refresh.token"));
+  MISSING_REFRESH_TOKEN(ErrorCode.from(1011, "missing.refresh.token")),
+  IP_NOT_FOUND(ErrorCode.from(1012, "ip.not.found"));
 
   final ErrorCode code;
 
