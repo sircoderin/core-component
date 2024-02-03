@@ -8,3 +8,5 @@ dependencyOverrides += "com.puppycrawl.tools" % "checkstyle" % "10.7.0"
 
 // formats code
 addSbtPlugin("com.lightbend.sbt" % "sbt-java-formatter" % "0.6.0")
+
+addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "1.2.0")
