@@ -61,7 +61,7 @@ public class LoginService {
   /**
    * Login user and return access and refresh tokens.
    *
-   * @param request  the HTTP request
+   * @param request the HTTP request
    * @param username the username of the user
    * @param password the password of the user
    * @return a Tokens object containing the access and refresh tokens
@@ -144,13 +144,14 @@ public class LoginService {
   }
 
   /**
-   * Authorizes a request using a JWT access token. Verifies token validity and expiration, and user's role.
+   * Authorizes a request using a JWT access token. Verifies token validity and expiration, and
+   * user's role.
    *
-   * @param accessToken        the JWT access token
-   * @param permittedUserRoles a list of authorized user roles; if the list is empty, all users are allowed
+   * @param accessToken the JWT access token
+   * @param permittedUserRoles a list of authorized user roles; if it's empty, all users are allowed
    * @return the user ID associated with the validated JWT access token
-   * @throws LoginException If the access token is invalid or expired, or if the user's role does not match the
-   *                        permitted roles, a LoginException is thrown with the corresponding error code.
+   * @throws LoginException If the access token is invalid or expired, or if the user's role does
+   *     not match the permitted roles, a LoginException is thrown.
    */
   public String authorizeRequest(String accessToken, List<UserRole> permittedUserRoles)
       throws LoginException {
@@ -175,7 +176,7 @@ public class LoginService {
    * Refreshes the access and refresh tokens for a user.
    *
    * @param refreshToken the refresh token of the user
-   * @param clientIp     the IP of the client
+   * @param clientIp the IP of the client
    * @return a Tokens object containing the new access and refresh tokens
    * @throws LoginException if the refresh token is invalid or expired
    */
