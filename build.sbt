@@ -18,6 +18,11 @@ libraryDependencies ++= Seq(
   "com.password4j" % "password4j" % "1.7.0",
 )
 
+assembly / assemblyMergeStrategy := {
+  case PathList("META-INF", _*) => MergeStrategy.discard
+  case _ => MergeStrategy.first
+}
+
 Global / onChangedBuildSource := ReloadOnSourceChanges
 jcheckStyleConfig := "google-checks.xml"
 
