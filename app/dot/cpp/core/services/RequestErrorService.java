@@ -83,7 +83,7 @@ public final class RequestErrorService {
       errorMessage = messagesApi.preferred(request).apply(errorCode.getMessage());
       errorCode.setDetails(errorMessage);
 
-      logger.error("controller error {}", errorCode);
+      logger.error("{}", errorCode);
       logger.error("", e);
     } else {
       logger.error("", e);
