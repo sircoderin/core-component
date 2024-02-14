@@ -6,8 +6,6 @@ import dot.cpp.core.exceptions.FormException;
 import dot.cpp.core.models.BaseRequest;
 import dot.cpp.core.services.RequestErrorService;
 import javax.inject.Inject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import play.data.FormFactory;
 import play.i18n.MessagesApi;
 import play.mvc.Call;
@@ -27,7 +25,7 @@ public class EntityController extends Controller {
 
   protected <T extends BaseRequest> T getRequest(Class<T> clazz, Http.Request request)
       throws FormException {
-    final var userId = request.attrs().get(Constants.USER).getRecordId();
+    final var userId = request.attrs().get(Constants.USER_ID);
     final var form = formFactory.form(clazz).bindFromRequest(request);
 
     if (form.hasErrors()) {

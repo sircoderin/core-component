@@ -79,9 +79,12 @@ public final class RequestErrorService {
       errorMessage =
           getErrorMessage(((FormException) e).getFormErrors(), messagesApi.preferred(request));
     } else if (e instanceof BaseException) {
+      final var errorCode = ((BaseException) e).getErrorCode();
+      errorMessage = messagesApi.preferred(request).apply(errorCode.getMessage());
+      errorCode.setDetails(errorMessage);
+
+      logger.error("{}", errorCode);
       logger.error("", e);
-      errorMessage =
-          messagesApi.preferred(request).apply(((BaseException) e).getErrorCode().getMessage());
     } else {
       logger.error("", e);
       errorMessage = messagesApi.preferred(request).apply(e.getMessage());

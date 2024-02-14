@@ -14,7 +14,6 @@ import dot.cpp.core.exceptions.BaseException;
 import dot.cpp.core.exceptions.LoginException;
 import dot.cpp.core.helpers.CookieHelper;
 import dot.cpp.core.models.AuthTokens;
-import dot.cpp.core.models.user.entity.User;
 import dot.cpp.core.services.LoginService;
 import dot.cpp.repository.services.RepositoryService;
 import java.util.Arrays;
@@ -28,7 +27,6 @@ import org.slf4j.LoggerFactory;
 import play.i18n.Messages;
 import play.i18n.MessagesApi;
 import play.mvc.Action;
-import play.mvc.Http;
 import play.mvc.Http.Request;
 import play.mvc.Result;
 
@@ -71,8 +69,8 @@ public class AuthenticationAction extends Action<Authentication> {
     logger.debug("refreshToken: {}", refreshToken);
 
     try {
-      final var user = loginService.authorizeRequest(accessToken, getConfigUserRoles());
-      return delegate.call(request.addAttr(Constants.USER, user));
+      final var userId = loginService.authorizeRequest(accessToken, getConfigUserRoles());
+      return delegate.call(request.addAttr(Constants.USER_ID, userId));
     } catch (LoginException loginEx) {
       logger.debug("{}", loginEx.getMessage());
 
@@ -83,9 +81,9 @@ public class AuthenticationAction extends Action<Authentication> {
 
         final var clientIp = loginService.getClientIp(request);
         final var tokens = loginService.refreshTokens(refreshToken, clientIp);
-        final var user = loginService.authorizeRequest(tokens.accessToken, getConfigUserRoles());
+        final var userId = loginService.authorizeRequest(tokens.accessToken, getConfigUserRoles());
 
-        return getSuccessfulResult(request, user, tokens);
+        return getSuccessfulResult(request, userId, tokens);
       } catch (BaseException exception) {
         logger.debug("", exception);
         return getLogoutRedirect(messages);
@@ -98,10 +96,10 @@ public class AuthenticationAction extends Action<Authentication> {
   }
 
   private CompletionStage<Result> getSuccessfulResult(
-      Request request, User user, AuthTokens authTokens) {
+      Request request, String userId, AuthTokens authTokens) {
     final var isSecure = config.getBoolean("play.http.session.secure");
     return delegate
-        .call(request.addAttr(Constants.USER, user))
+        .call(request.addAttr(Constants.USER_ID, userId))
         .thenApply(
             result ->
                 result.withCookies(

@@ -1,15 +1,14 @@
 package dot.cpp.core.services;
 
+import static dot.cpp.core.constants.Constants.USER_ROLE;
 import static dot.cpp.core.helpers.ValidationHelper.isEmpty;
 
 import dot.cpp.core.enums.ErrorCodes;
 import dot.cpp.core.enums.UserRole;
-import dot.cpp.core.exceptions.BaseException;
 import dot.cpp.core.exceptions.LoginException;
 import dot.cpp.core.models.AuthTokens;
 import dot.cpp.core.models.session.entity.Session;
 import dot.cpp.core.models.session.repository.SessionRepository;
-import dot.cpp.core.models.user.entity.User;
 import dot.cpp.core.models.user.repository.UserRepository;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
@@ -95,7 +94,7 @@ public class LoginService {
       sessionRepository.save(session);
       logger.debug("{}", session);
 
-      return getTokens(session);
+      return getAuthTokens(session, user.getRole());
     }
   }
 
@@ -118,7 +117,7 @@ public class LoginService {
     return clientIp;
   }
 
-  private String getAccessToken(String userId) {
+  private String getAccessToken(String userId, UserRole userRole) {
     final var expirationDateAccess = new Date();
     expirationDateAccess.setTime(expirationDateAccess.getTime() + ACCESS_TIME);
 
@@ -127,24 +126,12 @@ public class LoginService {
             .setSubject(userId)
             .setExpiration(expirationDateAccess)
             .signWith(key)
+            .claim(USER_ROLE, userRole)
             .compact();
 
     logger.debug("{}", jws);
 
     return jws;
-  }
-
-  public String checkJwtAndGetUserId(String jwtToken) throws LoginException {
-    logger.debug("{}", jwtToken);
-
-    final var claims = getJwsClaims(jwtToken).getBody();
-    final var expirationDate = claims.getExpiration();
-
-    if (expirationDate.before(new Date())) {
-      throw LoginException.from(ErrorCodes.EXPIRED_ACCESS);
-    }
-
-    return claims.getSubject();
   }
 
   private Jws<Claims> getJwsClaims(String jwtToken) throws LoginException {
@@ -156,24 +143,33 @@ public class LoginService {
     }
   }
 
-  public User authorizeRequest(String accessToken, List<UserRole> permittedUserRoles)
+  /**
+   * Authorizes a request using a JWT access token. Verifies token validity and expiration, and
+   * user's role.
+   *
+   * @param accessToken the JWT access token
+   * @param permittedUserRoles a list of authorized user roles; if it's empty, all users are allowed
+   * @return the user ID associated with the validated JWT access token
+   * @throws LoginException If the access token is invalid or expired, or if the user's role does
+   *     not match the permitted roles, a LoginException is thrown.
+   */
+  public String authorizeRequest(String accessToken, List<UserRole> permittedUserRoles)
       throws LoginException {
-    final String userId = checkJwtAndGetUserId(accessToken);
-    try {
-      final var user = userService.findById(userId);
-      logger.debug("{}", user);
+    logger.debug("JWT access token {}", accessToken);
 
-      if (!user.isActive()) {
-        throw LoginException.from(ErrorCodes.USER_INACTIVE_ACCOUNT);
-      }
-      if (!permittedUserRoles.isEmpty() && !permittedUserRoles.contains(user.getRole())) {
-        throw LoginException.from(ErrorCodes.USER_ROLE_MISMATCH);
-      }
+    final var claims = getJwsClaims(accessToken).getBody();
+    final var expirationDate = claims.getExpiration();
 
-      return user;
-    } catch (BaseException e) {
-      throw LoginException.from(ErrorCodes.USER_NOT_FOUND);
+    if (expirationDate.before(new Date())) {
+      throw LoginException.from(ErrorCodes.EXPIRED_ACCESS);
     }
+
+    final var userRole = claims.get(USER_ROLE, String.class);
+    if (!permittedUserRoles.isEmpty() && !permittedUserRoles.contains(UserRole.valueOf(userRole))) {
+      throw LoginException.from(ErrorCodes.USER_ROLE_MISMATCH);
+    }
+
+    return claims.getSubject(); // userId
   }
 
   /**
@@ -190,45 +186,51 @@ public class LoginService {
     locks[lockIndex].lock();
     try {
       final var session = sessionRepository.findByField("refreshToken", refreshToken);
-
-      if (session == null) {
-        final var refreshedSession = sessionRepository.findByField("oldRefreshToken", refreshToken);
-
-        if (refreshedSession != null) {
-          validateSessionIp(clientIp, refreshedSession);
-
-          if (refreshedSession.getRefreshExpiryTime()
-              > new Date().getTime() + REFRESH_TIME - 10000L) {
-            return getTokens(refreshedSession);
-          }
-        }
-
-        throw LoginException.from(ErrorCodes.SESSION_NOT_FOUND);
-      }
-
-      validateSessionIp(clientIp, session);
-
-      logger.debug("before refresh {}", session);
-
-      if (session.getRefreshExpiryTime() < new Date().getTime()) {
-        throw LoginException.from(ErrorCodes.EXPIRED_REFRESH);
-      }
-
-      Date expirationDateRefresh = new Date();
-      expirationDateRefresh.setTime(expirationDateRefresh.getTime() + REFRESH_TIME);
-      final String newRefreshToken = UUID.randomUUID().toString();
-
-      session.setRefreshExpiryTime(expirationDateRefresh.getTime());
-      session.setRefreshToken(newRefreshToken);
-      session.setOldRefreshToken(refreshToken);
-      sessionRepository.save(session);
-
-      logger.debug("after refresh {}", session);
-
-      return getTokens(session);
+      return session != null
+          ? refreshTokens(refreshToken, clientIp, session)
+          : tryRecentlyRefreshedSession(refreshToken, clientIp);
     } finally {
       locks[lockIndex].unlock();
     }
+  }
+
+  private AuthTokens refreshTokens(String refreshToken, String clientIp, Session session)
+      throws LoginException {
+    validateSessionIp(clientIp, session);
+
+    logger.debug("before refresh {}", session);
+
+    if (session.getRefreshExpiryTime() < new Date().getTime()) {
+      throw LoginException.from(ErrorCodes.EXPIRED_REFRESH);
+    }
+
+    Date expirationDateRefresh = new Date();
+    expirationDateRefresh.setTime(expirationDateRefresh.getTime() + REFRESH_TIME);
+    final String newRefreshToken = UUID.randomUUID().toString();
+
+    session.setRefreshExpiryTime(expirationDateRefresh.getTime());
+    session.setRefreshToken(newRefreshToken);
+    session.setOldRefreshToken(refreshToken);
+    sessionRepository.save(session);
+
+    logger.debug("after refresh {}", session);
+
+    return getAuthTokens(session);
+  }
+
+  private AuthTokens tryRecentlyRefreshedSession(String refreshToken, String clientIp)
+      throws LoginException {
+    final var refreshedSession = sessionRepository.findByField("oldRefreshToken", refreshToken);
+
+    if (refreshedSession != null) {
+      validateSessionIp(clientIp, refreshedSession);
+
+      if (refreshedSession.getRefreshExpiryTime() > new Date().getTime() + REFRESH_TIME - 10000L) {
+        return getAuthTokens(refreshedSession);
+      }
+    }
+
+    throw LoginException.from(ErrorCodes.SESSION_NOT_FOUND);
   }
 
   private void validateSessionIp(String clientIp, Session session) throws LoginException {
@@ -238,8 +240,19 @@ public class LoginService {
     }
   }
 
-  private AuthTokens getTokens(Session session) {
-    final var accessToken = getAccessToken(session.getUserId());
+  private AuthTokens getAuthTokens(Session session) throws LoginException {
+    final var user = userRepository.findById(session.getUserId());
+
+    if (user == null) {
+      logger.error("User not found {}", session.getUserId());
+      throw LoginException.from(ErrorCodes.USER_NOT_FOUND);
+    }
+
+    return getAuthTokens(session, user.getRole());
+  }
+
+  private AuthTokens getAuthTokens(Session session, UserRole userRole) {
+    final var accessToken = getAccessToken(session.getUserId(), userRole);
     final var tokens = new AuthTokens(accessToken, session.getRefreshToken());
     logger.debug("refreshed tokens {}", tokens);
     return tokens;
