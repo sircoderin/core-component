@@ -14,7 +14,6 @@ import dot.cpp.core.exceptions.BaseException;
 import dot.cpp.core.exceptions.LoginException;
 import dot.cpp.core.helpers.CookieHelper;
 import dot.cpp.core.models.AuthTokens;
-import dot.cpp.core.models.user.entity.User;
 import dot.cpp.core.services.LoginService;
 import dot.cpp.repository.services.RepositoryService;
 import java.util.Arrays;

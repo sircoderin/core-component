@@ -186,45 +186,51 @@ public class LoginService {
     locks[lockIndex].lock();
     try {
       final var session = sessionRepository.findByField("refreshToken", refreshToken);
-
-      if (session == null) {
-        final var refreshedSession = sessionRepository.findByField("oldRefreshToken", refreshToken);
-
-        if (refreshedSession != null) {
-          validateSessionIp(clientIp, refreshedSession);
-
-          if (refreshedSession.getRefreshExpiryTime()
-              > new Date().getTime() + REFRESH_TIME - 10000L) {
-            return getAuthTokens(refreshedSession);
-          }
-        }
-
-        throw LoginException.from(ErrorCodes.SESSION_NOT_FOUND);
-      }
-
-      validateSessionIp(clientIp, session);
-
-      logger.debug("before refresh {}", session);
-
-      if (session.getRefreshExpiryTime() < new Date().getTime()) {
-        throw LoginException.from(ErrorCodes.EXPIRED_REFRESH);
-      }
-
-      Date expirationDateRefresh = new Date();
-      expirationDateRefresh.setTime(expirationDateRefresh.getTime() + REFRESH_TIME);
-      final String newRefreshToken = UUID.randomUUID().toString();
-
-      session.setRefreshExpiryTime(expirationDateRefresh.getTime());
-      session.setRefreshToken(newRefreshToken);
-      session.setOldRefreshToken(refreshToken);
-      sessionRepository.save(session);
-
-      logger.debug("after refresh {}", session);
-
-      return getAuthTokens(session);
+      return session != null
+          ? refreshTokens(refreshToken, clientIp, session)
+          : tryRecentlyRefreshedSession(refreshToken, clientIp);
     } finally {
       locks[lockIndex].unlock();
     }
+  }
+
+  private AuthTokens refreshTokens(String refreshToken, String clientIp, Session session)
+      throws LoginException {
+    validateSessionIp(clientIp, session);
+
+    logger.debug("before refresh {}", session);
+
+    if (session.getRefreshExpiryTime() < new Date().getTime()) {
+      throw LoginException.from(ErrorCodes.EXPIRED_REFRESH);
+    }
+
+    Date expirationDateRefresh = new Date();
+    expirationDateRefresh.setTime(expirationDateRefresh.getTime() + REFRESH_TIME);
+    final String newRefreshToken = UUID.randomUUID().toString();
+
+    session.setRefreshExpiryTime(expirationDateRefresh.getTime());
+    session.setRefreshToken(newRefreshToken);
+    session.setOldRefreshToken(refreshToken);
+    sessionRepository.save(session);
+
+    logger.debug("after refresh {}", session);
+
+    return getAuthTokens(session);
+  }
+
+  private AuthTokens tryRecentlyRefreshedSession(String refreshToken, String clientIp)
+      throws LoginException {
+    final var refreshedSession = sessionRepository.findByField("oldRefreshToken", refreshToken);
+
+    if (refreshedSession != null) {
+      validateSessionIp(clientIp, refreshedSession);
+
+      if (refreshedSession.getRefreshExpiryTime() > new Date().getTime() + REFRESH_TIME - 10000L) {
+        return getAuthTokens(refreshedSession);
+      }
+    }
+
+    throw LoginException.from(ErrorCodes.SESSION_NOT_FOUND);
   }
 
   private void validateSessionIp(String clientIp, Session session) throws LoginException {
