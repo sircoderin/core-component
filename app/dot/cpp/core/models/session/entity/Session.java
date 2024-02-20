@@ -16,7 +16,6 @@ public class Session extends BaseEntity {
   private Long refreshExpiryTime;
   private String oldRefreshToken;
   private String clientIp;
-  private Long createTime;
 
   @Transient @JsonIgnore private Cookie cookie;
 
@@ -80,13 +79,5 @@ public class Session extends BaseEntity {
 
   public void setClientIp(String clientIp) {
     this.clientIp = clientIp;
-  }
-
-  public Long getCreateTime() {
-    return createTime;
-  }
-
-  public void setCreateTime(Long createTime) {
-    this.createTime = createTime;
   }
 }

@@ -88,7 +88,6 @@ public class LoginService {
       final var refreshToken = UUID.randomUUID().toString();
       session.setRefreshToken(refreshToken);
       session.setRefreshExpiryTime(expirationDateRefresh.getTime());
-      session.setCreateTime(Instant.now().toEpochMilli());
       session.setUserId(user.getRecordId());
       session.setClientIp(clientIp);
       sessionRepository.save(session);
