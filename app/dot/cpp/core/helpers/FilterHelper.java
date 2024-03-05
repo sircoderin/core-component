@@ -45,11 +45,11 @@ public final class FilterHelper {
     return values.isEmpty() ? null : Filters.in(field, values);
   }
 
-  public static Filter eq(String field, String value) {
+  public static Filter eq(String field, Object value) {
     return getFilterOrNull(Filters::eq, field, value);
   }
 
-  public static Filter ne(String field, String value) {
+  public static Filter ne(String field, Object value) {
     return getFilterOrNull(Filters::ne, field, value);
   }
 
