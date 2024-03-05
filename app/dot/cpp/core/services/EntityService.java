@@ -161,6 +161,10 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
     return filter == null ? repository.count() : repository.count(filter);
   }
 
+  public boolean exists(Filter filter) {
+    return count(filter) > 0L;
+  }
+
   public long sum(String field) {
     return repository.sum(field);
   }
