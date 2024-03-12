@@ -41,7 +41,7 @@ public final class FilterHelper {
     return isEmpty(value) ? null : Filters.regex(fieldName).pattern("(?i).*" + value + ".*");
   }
 
-  public static Filter in(String field, List<String> values) {
+  public static Filter in(String field, List<?> values) {
     return values.isEmpty() ? null : Filters.in(field, values);
   }
 
