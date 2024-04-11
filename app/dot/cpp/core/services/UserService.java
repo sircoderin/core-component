@@ -70,8 +70,6 @@ public class UserService extends EntityService<User, UserRequest> {
 
   public User acceptInvitation(AcceptInviteRequest request, String resetPasswordUuid)
       throws BaseException {
-    logger.debug("accept invitation request {} with uuid {}", request, resetPasswordUuid);
-
     final var user = findByField(RESET_PASSWORD_UUID, resetPasswordUuid);
     final var hashedPassword = getHashedPassword(request.getPassword());
 
@@ -84,14 +82,12 @@ public class UserService extends EntityService<User, UserRequest> {
 
     user.setModifiedComment("Accept invite");
 
-    logger.debug("{}", user);
     return saveWithHistory(user, SYSTEM);
   }
 
   public User setPassword(
       SetPasswordRequest request, String resetPasswordUuid, String modifiedComment)
       throws BaseException {
-    logger.debug("set password request {} with uuid {}", request, resetPasswordUuid);
     final var user = findByField(RESET_PASSWORD_UUID, resetPasswordUuid);
     final var hashedPassword = getHashedPassword(request.getPassword());
     user.setPassword(hashedPassword.getResult());
@@ -113,7 +109,6 @@ public class UserService extends EntityService<User, UserRequest> {
     user.setModifiedComment(modifiedComment != null ? modifiedComment : "Reset password");
 
     saveWithHistory(user, user.getRecordId());
-    logger.debug("{}", user);
     return resetPasswordUuid;
   }
 

@@ -73,11 +73,11 @@ public class LoginService {
     final var user = userRepository.findByField("userName", username);
 
     if (user == null) {
-      logger.debug("User not found {}", username);
+      logger.debug("Username not found {}", username);
       throw LoginException.from(ErrorCodes.USER_NOT_FOUND);
     } else {
       if (!userService.passwordIsValid(user.getPassword(), password)) {
-        logger.debug("Failed authentication by {}", username);
+        logger.debug("Wrong password for username {}", username);
         throw LoginException.from(ErrorCodes.INCORRECT_PASSWORD);
       }
 
@@ -91,7 +91,6 @@ public class LoginService {
       session.setUserId(user.getRecordId());
       session.setClientIp(clientIp);
       sessionRepository.save(session);
-      logger.debug("{}", session);
 
       return getAuthTokens(session, user.getRole());
     }
@@ -120,17 +119,12 @@ public class LoginService {
     final var expirationDateAccess = new Date();
     expirationDateAccess.setTime(expirationDateAccess.getTime() + ACCESS_TIME);
 
-    String jws =
-        Jwts.builder()
+    return Jwts.builder()
             .setSubject(userId)
             .setExpiration(expirationDateAccess)
             .signWith(key)
             .claim(USER_ROLE, userRole)
             .compact();
-
-    logger.debug("{}", jws);
-
-    return jws;
   }
 
   private Jws<Claims> getJwsClaims(String jwtToken) throws LoginException {
@@ -154,8 +148,6 @@ public class LoginService {
    */
   public String authorizeRequest(String accessToken, List<UserRole> permittedUserRoles)
       throws LoginException {
-    logger.debug("JWT access token {}", accessToken);
-
     final var claims = getJwsClaims(accessToken).getBody();
     final var expirationDate = claims.getExpiration();
 
@@ -197,22 +189,18 @@ public class LoginService {
       throws LoginException {
     validateSessionIp(clientIp, session);
 
-    logger.debug("before refresh {}", session);
-
     if (session.getRefreshExpiryTime() < new Date().getTime()) {
       throw LoginException.from(ErrorCodes.EXPIRED_REFRESH);
     }
 
-    Date expirationDateRefresh = new Date();
+    final var expirationDateRefresh = new Date();
     expirationDateRefresh.setTime(expirationDateRefresh.getTime() + REFRESH_TIME);
-    final String newRefreshToken = UUID.randomUUID().toString();
+    final var newRefreshToken = UUID.randomUUID().toString();
 
     session.setRefreshExpiryTime(expirationDateRefresh.getTime());
     session.setRefreshToken(newRefreshToken);
     session.setOldRefreshToken(refreshToken);
     sessionRepository.save(session);
-
-    logger.debug("after refresh {}", session);
 
     return getAuthTokens(session);
   }
@@ -253,7 +241,6 @@ public class LoginService {
   private AuthTokens getAuthTokens(Session session, UserRole userRole) {
     final var accessToken = getAccessToken(session.getUserId(), userRole);
     final var tokens = new AuthTokens(accessToken, session.getRefreshToken());
-    logger.debug("refreshed tokens {}", tokens);
     return tokens;
   }
 

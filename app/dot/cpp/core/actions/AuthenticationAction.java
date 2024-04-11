@@ -64,15 +64,11 @@ public class AuthenticationAction extends Action<Authentication> {
     final var accessToken = CookieHelper.getCookieString(request, ACCESS_TOKEN);
     final var refreshToken = CookieHelper.getCookieString(request, REFRESH_TOKEN);
 
-    logger.debug("request: {}", request);
-    logger.debug("accessToken: {}", accessToken);
-    logger.debug("refreshToken: {}", refreshToken);
-
     try {
       final var userId = loginService.authorizeRequest(accessToken, getConfigUserRoles());
       return delegate.call(request.addAttr(Constants.USER_ID, userId));
-    } catch (LoginException loginEx) {
-      logger.debug("{}", loginEx.getMessage());
+    } catch (LoginException loginException) {
+      logger.debug("Authorize request exception {}", loginException.getMessage());
 
       try {
         if (isEmpty(refreshToken)) {
@@ -82,10 +78,11 @@ public class AuthenticationAction extends Action<Authentication> {
         final var clientIp = loginService.getClientIp(request);
         final var tokens = loginService.refreshTokens(refreshToken, clientIp);
         final var userId = loginService.authorizeRequest(tokens.accessToken, getConfigUserRoles());
+        logger.debug("Successfully refreshed tokens for user {}", userId);
 
         return getSuccessfulResult(request, userId, tokens);
-      } catch (BaseException exception) {
-        logger.debug("", exception);
+      } catch (LoginException refreshException) {
+        logger.debug("Refresh exception {}", refreshException.getMessage());
         return getLogoutRedirect(messages);
       }
     }
@@ -113,7 +110,6 @@ public class AuthenticationAction extends Action<Authentication> {
       return CompletableFuture.completedFuture(status(status));
     }
 
-    logger.debug("Session expired");
     return CompletableFuture.completedFuture(
         CookieHelper.discardAuthorizationCookies(redirect(configuration.redirectUrl()))
             .flashing("alert-danger", messages.apply("general.session.expired")));
