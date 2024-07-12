@@ -120,11 +120,11 @@ public class LoginService {
     expirationDateAccess.setTime(expirationDateAccess.getTime() + ACCESS_TIME);
 
     return Jwts.builder()
-            .setSubject(userId)
-            .setExpiration(expirationDateAccess)
-            .signWith(key)
-            .claim(USER_ROLE, userRole)
-            .compact();
+        .setSubject(userId)
+        .setExpiration(expirationDateAccess)
+        .signWith(key)
+        .claim(USER_ROLE, userRole)
+        .compact();
   }
 
   private Jws<Claims> getJwsClaims(String jwtToken) throws LoginException {

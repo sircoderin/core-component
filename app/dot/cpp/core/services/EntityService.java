@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.validation.Validation;
@@ -281,6 +282,12 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
         historyEntity -> historyEntries.add(getHistoryEntry(users, historyEntity)));
 
     return historyEntries;
+  }
+
+  @NotNull
+  public static <V extends BaseEntity> Map<String, V> mapIdToBaseEntity(List<V> entities) {
+    return entities.stream()
+        .collect(Collectors.toMap(BaseEntity::getRecordId, Function.identity()));
   }
 
   @NotNull
