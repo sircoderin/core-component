@@ -10,6 +10,7 @@ import dev.morphia.query.filters.Filters;
 import dot.cpp.core.builders.FilterBuilder;
 import dot.cpp.core.utils.BindableLocalDate;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.BiFunction;
@@ -41,7 +42,7 @@ public final class FilterHelper {
     return isEmpty(value) ? null : Filters.regex(fieldName).pattern("(?i).*" + value + ".*");
   }
 
-  public static Filter in(String field, List<?> values) {
+  public static Filter in(String field, Collection<?> values) {
     return values.isEmpty() ? null : Filters.in(field, values);
   }
 
