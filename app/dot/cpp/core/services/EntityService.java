@@ -291,6 +291,11 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
   }
 
   @NotNull
+  public static <V extends BaseEntity> Collection<String> getIds(List<V> entities) {
+    return entities.stream().map(BaseEntity::getRecordId).collect(Collectors.toSet());
+  }
+
+  @NotNull
   private HistoryEntry getHistoryEntry(Map<String, String> users, BaseEntity entityState) {
     return new HistoryEntry(
         users.getOrDefault(entityState.getModifiedBy(), INVALID),
