@@ -131,6 +131,7 @@ public class LoginService {
     try {
       return Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(jwtToken);
     } catch (Exception e) {
+      // ! Arc Browser sends another redundant request without cookies which gets logged - IGNORE
       logger.debug("JWT error {}", e.getMessage());
       throw LoginException.from(ErrorCodes.INVALID_JWT);
     }
