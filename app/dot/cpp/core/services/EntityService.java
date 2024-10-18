@@ -219,6 +219,13 @@ public abstract class EntityService<T extends BaseEntity, S extends BaseRequest>
     return repository.saveWithHistory(entity);
   }
 
+  public List<T> saveWithHistory(List<T> entities) throws BaseException {
+    for (var entity : entities) {
+      validateEntity(entity);
+    }
+    return repository.saveWithHistory(entities);
+  }
+
   private void validateEntity(T entity) throws BaseException {
     final var violations = validator.validate(entity);
     if (!violations.isEmpty()) {
