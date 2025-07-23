@@ -1,15 +1,18 @@
 package dot.cpp.core.helpers;
 
 import dot.cpp.core.constants.Constants;
+import java.time.Duration;
 import play.mvc.Http;
 import play.mvc.Result;
 
 public class CookieHelper {
 
-  public static Http.Cookie getCookie(String cookieName, String cookieValue, boolean isSecure) {
+  public static Http.Cookie getCookie(
+      String cookieName, String cookieValue, boolean isSecure, long age) {
     return Http.Cookie.builder(cookieName, cookieValue)
         .withHttpOnly(true)
         .withSecure(isSecure)
+        .withMaxAge(Duration.ofMillis(age))
         .build();
   }
 

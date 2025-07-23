@@ -33,7 +33,7 @@ import play.mvc.Http;
 public class LoginService {
 
   public static final long REFRESH_TIME = 86400000L; // one day in milliseconds
-  public static final long ACCESS_TIME = 600000L; // 10 minutes in milliseconds
+  public static final long ACCESS_TIME = 1800000L; // 30 minutes in milliseconds
 
   public final UserService userService;
   private final SecretKey key;

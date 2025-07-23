@@ -4,13 +4,14 @@ import static dot.cpp.core.constants.Constants.ACCESS_TOKEN;
 import static dot.cpp.core.constants.Constants.REFRESH_TOKEN;
 import static dot.cpp.core.helpers.CookieHelper.getCookie;
 import static dot.cpp.core.helpers.ValidationHelper.isEmpty;
+import static dot.cpp.core.services.LoginService.ACCESS_TIME;
+import static dot.cpp.core.services.LoginService.REFRESH_TIME;
 
 import com.typesafe.config.Config;
 import dot.cpp.core.annotations.Authentication;
 import dot.cpp.core.constants.Constants;
 import dot.cpp.core.enums.ErrorCodes;
 import dot.cpp.core.enums.UserRole;
-import dot.cpp.core.exceptions.BaseException;
 import dot.cpp.core.exceptions.LoginException;
 import dot.cpp.core.helpers.CookieHelper;
 import dot.cpp.core.models.AuthTokens;
@@ -89,7 +90,7 @@ public class AuthenticationAction extends Action<Authentication> {
   }
 
   private List<UserRole> getConfigUserRoles() {
-    return Arrays.stream(configuration.userRoles()).collect(Collectors.toList());
+    return Arrays.stream(configuration.userRoles()).toList();
   }
 
   private CompletionStage<Result> getSuccessfulResult(
@@ -100,8 +101,8 @@ public class AuthenticationAction extends Action<Authentication> {
         .thenApply(
             result ->
                 result.withCookies(
-                    getCookie(ACCESS_TOKEN, authTokens.accessToken, isSecure),
-                    getCookie(REFRESH_TOKEN, authTokens.refreshToken, isSecure)));
+                    getCookie(ACCESS_TOKEN, authTokens.accessToken, isSecure, ACCESS_TIME),
+                    getCookie(REFRESH_TOKEN, authTokens.refreshToken, isSecure, REFRESH_TIME)));
   }
 
   private CompletableFuture<Result> getLogoutRedirect(Messages messages) {
