@@ -1,6 +1,6 @@
 package dot.cpp.core.services;
 
-import static dot.cpp.core.helpers.ValidationHelper.isEmpty;
+import static dot.cpp.repository.models.BaseEntity.RECORD_ID;
 
 import com.password4j.Argon2Function;
 import com.password4j.Hash;
@@ -9,12 +9,9 @@ import com.password4j.types.Argon2;
 import com.typesafe.config.Config;
 import dev.morphia.query.filters.Filters;
 import dot.cpp.core.enums.ErrorCodes;
-import dot.cpp.core.enums.UserRole;
-import dot.cpp.core.enums.UserStatus;
 import dot.cpp.core.exceptions.BaseException;
 import dot.cpp.core.models.user.entity.User;
 import dot.cpp.core.models.user.repository.UserRepository;
-import dot.cpp.core.models.user.request.AcceptInviteRequest;
 import dot.cpp.core.models.user.request.SetPasswordRequest;
 import dot.cpp.core.models.user.request.UserRequest;
 import java.util.UUID;
@@ -26,10 +23,12 @@ import org.slf4j.LoggerFactory;
 @Singleton
 public class UserService extends EntityService<User, UserRequest> {
 
-  private static final String TEMPORARY = "temporary";
-  private static final String RESET_PASSWORD_UUID = "resetPasswordUuid";
   public static final String SYSTEM = "system";
   public static final String EMAIL = "email";
+  public static final String ACTIVE = "active";
+  public static final String USER_NAME = "userName";
+  private static final String RESET_PASSWORD_UUID = "resetPasswordUuid";
+  private static final String ID = "id";
   private final Logger logger = LoggerFactory.getLogger(getClass());
   private final String passwordPepper;
   private final Argon2Function argon2 = Argon2Function.getInstance(1000, 4, 2, 32, Argon2.ID, 19);
@@ -42,10 +41,19 @@ public class UserService extends EntityService<User, UserRequest> {
 
   @Override
   public void setEntityFromRequest(User entity, UserRequest request) throws BaseException {
-    if (isEmpty(entity.getPassword())) {
-      entity.setPassword("temp123456789");
+    if (emailExists(request.getEmail(), entity.getRecordId())) {
+      throw BaseException.from(ErrorCodes.USER_EMAIL_EXISTS);
     }
+
+    if (userNameExists(request.getUserName(), entity.getRecordId())) {
+      throw BaseException.from(ErrorCodes.USER_NAME_EXISTS);
+    }
+
     super.setEntityFromRequest(entity, request);
+
+    if (!request.isActive()) {
+      entity.setEmail(String.format("inactive-%s@terra.ro", entity.getUserName()));
+    }
   }
 
   @Override
@@ -66,23 +74,6 @@ public class UserService extends EntityService<User, UserRequest> {
   @Override
   protected UserRepository getRepository() {
     return (UserRepository) super.getRepository();
-  }
-
-  public User acceptInvitation(AcceptInviteRequest request, String resetPasswordUuid)
-      throws BaseException {
-    final var user = findByField(RESET_PASSWORD_UUID, resetPasswordUuid);
-    final var hashedPassword = getHashedPassword(request.getPassword());
-
-    user.setPassword(hashedPassword.getResult());
-    user.setUserName(request.getUsername());
-    user.setFullName(request.getFullName());
-    user.setIdNumber(request.getDocumentId());
-    user.setResetPasswordUuid("");
-    user.setStatus(UserStatus.ACTIVE);
-
-    user.setModifiedComment("Accept invite");
-
-    return saveWithHistory(user, SYSTEM);
   }
 
   public User setPassword(
@@ -116,27 +107,16 @@ public class UserService extends EntityService<User, UserRequest> {
     return Password.check(inputPassword, actualPassword).addPepper(passwordPepper).with(argon2);
   }
 
-  public boolean emailExists(String email) {
-    return findFirst(Filters.eq(EMAIL, email)) != null;
+  private boolean emailExists(String email, String id) {
+    return findFirst(Filters.and(Filters.ne(RECORD_ID, id), Filters.eq(EMAIL, email))) != null;
+  }
+
+  private boolean userNameExists(String userName, String id) {
+    return findFirst(Filters.and(Filters.ne(RECORD_ID, id), Filters.eq(USER_NAME, userName)))
+        != null;
   }
 
   private Hash getHashedPassword(String password) {
     return Password.hash(password).addRandomSalt(16).addPepper(passwordPepper).with(argon2);
-  }
-
-  public User createTestUser(String email, UserRole userRole) throws BaseException {
-    final var user = new User();
-    final var resetPasswordUuid = UUID.randomUUID().toString();
-
-    user.setEmail(email);
-    user.setRole(userRole);
-    user.setUserName(TEMPORARY);
-    user.setPassword(TEMPORARY);
-    user.setStatus(UserStatus.INACTIVE);
-    user.setResetPasswordUuid(resetPasswordUuid);
-    user.setFullName(TEMPORARY);
-    user.setIdNumber(TEMPORARY);
-
-    return save(user);
   }
 }

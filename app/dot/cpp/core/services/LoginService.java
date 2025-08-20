@@ -241,8 +241,7 @@ public class LoginService {
 
   private AuthTokens getAuthTokens(Session session, UserRole userRole) {
     final var accessToken = getAccessToken(session.getUserId(), userRole);
-    final var tokens = new AuthTokens(accessToken, session.getRefreshToken());
-    return tokens;
+    return new AuthTokens(accessToken, session.getRefreshToken());
   }
 
   public void logout(String userId) throws LoginException {

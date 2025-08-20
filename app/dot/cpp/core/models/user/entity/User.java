@@ -3,9 +3,9 @@ package dot.cpp.core.models.user.entity;
 import dev.morphia.annotations.Entity;
 import dot.cpp.core.constants.Patterns;
 import dot.cpp.core.enums.UserRole;
-import dot.cpp.core.enums.UserStatus;
 import dot.cpp.repository.models.BaseEntity;
 import java.util.List;
+import java.util.UUID;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
@@ -15,7 +15,7 @@ public class User extends BaseEntity {
 
   @NotBlank private String userName;
 
-  @NotBlank private String password;
+  @NotBlank private String password = UUID.randomUUID().toString();
 
   @NotBlank private String fullName;
 
@@ -25,18 +25,14 @@ public class User extends BaseEntity {
 
   private List<String> groups;
 
-  private UserStatus status = UserStatus.ACTIVE;
+  private boolean active;
 
   @NotNull
   @Pattern(regexp = Patterns.EMAIL, message = "constraints.field.invalid")
   private String email;
 
   @Pattern(regexp = Patterns.UUID, message = "constraints.field.invalid")
-  private String resetPasswordUuid;
-
-  public boolean isActive() {
-    return status == UserStatus.ACTIVE;
-  }
+  private String resetPasswordUuid = UUID.randomUUID().toString();
 
   public String getUserName() {
     return userName;
@@ -86,12 +82,12 @@ public class User extends BaseEntity {
     this.groups = groups;
   }
 
-  public UserStatus getStatus() {
-    return status;
+  public boolean isActive() {
+    return active;
   }
 
-  public void setStatus(UserStatus status) {
-    this.status = status;
+  public void setActive(boolean active) {
+    this.active = active;
   }
 
   public String getEmail() {
