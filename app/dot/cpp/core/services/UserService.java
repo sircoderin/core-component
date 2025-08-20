@@ -27,8 +27,9 @@ public class UserService extends EntityService<User, UserRequest> {
   public static final String EMAIL = "email";
   public static final String ACTIVE = "active";
   public static final String USER_NAME = "userName";
+  public static final String DEACTIVATE_USER = "Deactivate user";
+  public static final String ACTIVATE_USER = "Activate user";
   private static final String RESET_PASSWORD_UUID = "resetPasswordUuid";
-  private static final String ID = "id";
   private final Logger logger = LoggerFactory.getLogger(getClass());
   private final String passwordPepper;
   private final Argon2Function argon2 = Argon2Function.getInstance(1000, 4, 2, 32, Argon2.ID, 19);
@@ -51,8 +52,8 @@ public class UserService extends EntityService<User, UserRequest> {
 
     super.setEntityFromRequest(entity, request);
 
-    if (!request.isActive()) {
-      entity.setEmail(String.format("inactive-%s@terra.ro", entity.getUserName()));
+    if (entity.getRecordId() == null) {
+      entity.setActive(true);
     }
   }
 
@@ -101,6 +102,29 @@ public class UserService extends EntityService<User, UserRequest> {
 
     saveWithHistory(user, user.getRecordId());
     return resetPasswordUuid;
+  }
+
+  public void setActive(String id) throws BaseException {
+    final var user = findById(id);
+    if (user == null) {
+      throw notFoundException();
+    }
+
+    user.setActive(true);
+    user.setModifiedComment(ACTIVATE_USER);
+    saveWithHistory(user);
+  }
+
+  public void setInactive(String id) throws BaseException {
+    final var user = findById(id);
+    if (user == null) {
+      throw notFoundException();
+    }
+
+    user.setActive(false);
+    user.setEmail(String.format("inactive-%s@terra.ro", user.getUserName()));
+    user.setModifiedComment(DEACTIVATE_USER);
+    saveWithHistory(user);
   }
 
   public boolean passwordIsValid(String actualPassword, String inputPassword) {

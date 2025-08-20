@@ -22,8 +22,6 @@ public class UserRequest extends BaseRequest {
   @NotBlank(message = "constraints.field.mandatory")
   private String idNumber;
 
-  private boolean active;
-
   public UserRole getRole() {
     return role;
   }
@@ -62,13 +60,5 @@ public class UserRequest extends BaseRequest {
 
   public void setIdNumber(String idNumber) {
     this.idNumber = idNumber;
-  }
-
-  public boolean isActive() {
-    return active;
-  }
-
-  public void setActive(boolean active) {
-    this.active = active;
   }
 }
