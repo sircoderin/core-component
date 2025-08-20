@@ -81,6 +81,11 @@ public class LoginService {
         throw LoginException.from(ErrorCodes.INCORRECT_PASSWORD);
       }
 
+      if (!user.isActive()) {
+        logger.debug("Inactive user account {}", username);
+        throw LoginException.from(ErrorCodes.USER_INACTIVE_ACCOUNT);
+      }
+
       final var expirationDateRefresh = new Date();
       expirationDateRefresh.setTime(expirationDateRefresh.getTime() + REFRESH_TIME);
 
