@@ -29,7 +29,7 @@ public class UserService extends EntityService<User, UserRequest> {
   public static final String USER_NAME = "userName";
   public static final String DEACTIVATE_USER = "Deactivate user";
   public static final String ACTIVATE_USER = "Activate user";
-  private static final String RESET_PASSWORD_UUID = "resetPasswordUuid";
+  public static final String RESET_PASSWORD_UUID = "resetPasswordUuid";
   private final Logger logger = LoggerFactory.getLogger(getClass());
   private final String passwordPepper;
   private final Argon2Function argon2 = Argon2Function.getInstance(1000, 4, 2, 32, Argon2.ID, 19);
