@@ -15,7 +15,7 @@ libraryDependencies ++= Seq(
   "io.jsonwebtoken" % "jjwt-api" % "0.11.5",
   "io.jsonwebtoken" % "jjwt-impl" % "0.11.5",
   "io.jsonwebtoken" % "jjwt-gson" % "0.11.5",
-  "com.password4j" % "password4j" % "1.7.0",
+  "com.password4j" % "password4j" % "1.8.4",
 )
 
 
