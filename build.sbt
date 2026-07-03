@@ -23,6 +23,12 @@ libraryDependencies ++= Seq(
 Global / onChangedBuildSource := ReloadOnSourceChanges
 jcheckStyleConfig := "google-checks.xml"
 
+// Skip Javadoc generation during publishLocal.
+// Works around an sbt DiagnosticsReporter crash (StringIndexOutOfBoundsException)
+// triggered by CRLF line endings when javac emits doclint warnings.
+Compile / doc / sources := Seq.empty
+Compile / packageDoc / publishArtifact := false
+
 // compile will run formatter and checkstyle on app files and test files
 (Compile / compile) := ((Compile / compile) dependsOn (Compile / javafmt)).value
 (Compile / compile) := ((Compile / compile) dependsOn (Compile / jcheckStyle)).value
